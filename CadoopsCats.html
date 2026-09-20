@@ -6,7 +6,7 @@
 <title>Cadoops' Cats</title>
 <style>
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#87b8d8;font-family:-apple-system,BlinkMacSystemFont,sans-serif;touch-action:none}
-canvas{display:block;width:100%;height:100%}
+canvas{display:block;position:fixed;inset:0;width:100vw!important;height:100vh!important}
 #hud{position:fixed;inset:0;pointer-events:none;color:white;text-shadow:0 2px 4px #0008}
 #brand{position:absolute;top:max(14px,env(safe-area-inset-top));left:16px;font-weight:800;font-size:20px}
 #ver{font-size:12px;opacity:.8;margin-top:2px}
@@ -18,7 +18,7 @@ canvas{display:block;width:100%;height:100%}
 #run{right:116px;bottom:max(42px,env(safe-area-inset-bottom));width:62px;height:62px}
 #hint{position:absolute;bottom:max(122px,calc(env(safe-area-inset-bottom) + 122px));right:20px;font-size:12px;opacity:.85}
 </style></head><body>
-<div id="hud"><div id="brand">Cadoops' Cats<div id="ver">Prototype v0.0.2</div></div><div id="status">Loading 3D world…</div><div id="stick"><div id="knob"></div></div><button class="btn" id="jump">JUMP</button><button class="btn" id="run">RUN</button><div id="hint">Drag anywhere else to turn camera</div></div>
+<div id="hud"><div id="brand">Cadoops' Cats<div id="ver">Prototype v0.0.3</div></div><div id="status">Loading 3D world…</div><div id="stick"><div id="knob"></div></div><button class="btn" id="jump">JUMP</button><button class="btn" id="run">RUN</button><div id="hint">Drag anywhere else to turn camera</div></div>
 <script type="module">
 const status=document.getElementById('status');
 try{
