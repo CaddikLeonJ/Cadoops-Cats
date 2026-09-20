@@ -6,7 +6,7 @@
 <title>Cadoops' Cats</title>
 <style>
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#87b8d8;font-family:-apple-system,BlinkMacSystemFont,sans-serif;touch-action:none}
-canvas{display:block;position:fixed;inset:0;width:100vw!important;height:100vh!important}
+canvas{display:block;position:absolute;inset:0}
 #hud{position:fixed;inset:0;pointer-events:none;color:white;text-shadow:0 2px 4px #0008}
 #brand{position:absolute;top:max(14px,env(safe-area-inset-top));left:16px;font-weight:800;font-size:20px}
 #ver{font-size:12px;opacity:.8;margin-top:2px}
@@ -18,14 +18,14 @@ canvas{display:block;position:fixed;inset:0;width:100vw!important;height:100vh!i
 #run{right:116px;bottom:max(42px,env(safe-area-inset-bottom));width:62px;height:62px}
 #hint{position:absolute;bottom:max(122px,calc(env(safe-area-inset-bottom) + 122px));right:20px;font-size:12px;opacity:.85}
 </style></head><body>
-<div id="hud"><div id="brand">Cadoops' Cats<div id="ver">Prototype v0.0.3</div></div><div id="status">Loading 3D world…</div><div id="stick"><div id="knob"></div></div><button class="btn" id="jump">JUMP</button><button class="btn" id="run">RUN</button><div id="hint">Drag anywhere else to turn camera</div></div>
+<div id="hud"><div id="brand">Cadoops' Cats<div id="ver">Prototype v0.0.4</div></div><div id="status">Loading 3D world…</div><div id="stick"><div id="knob"></div></div><button class="btn" id="jump">JUMP</button><button class="btn" id="run">RUN</button><div id="hint">Drag anywhere else to turn camera</div></div>
 <script type="module">
 const status=document.getElementById('status');
 try{
  const THREE=await import('https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js');
  const scene=new THREE.Scene();scene.background=new THREE.Color(0x91bdd6);scene.fog=new THREE.Fog(0x91bdd6,18,45);
  const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.05,100);
- const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;document.body.prepend(renderer.domElement);
+ const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;document.body.prepend(renderer.domElement);function resizeRenderer(){const w=document.documentElement.clientWidth,h=document.documentElement.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}resizeRenderer();
  scene.add(new THREE.HemisphereLight(0xfff4df,0x64745e,2.1));const sun=new THREE.DirectionalLight(0xffffff,2.2);sun.position.set(5,9,4);sun.castShadow=true;scene.add(sun);
  const floor=new THREE.Mesh(new THREE.PlaneGeometry(24,24),new THREE.MeshStandardMaterial({color:0xcaa97c,roughness:.9}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
  const grid=new THREE.GridHelper(24,24,0x8f7659,0xb79a76);grid.position.y=.004;scene.add(grid);
@@ -43,6 +43,6 @@ try{
  const clock=new THREE.Clock();status.textContent='Test Room • Cat ready';
  function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.033),speed=run?4.2:2.2;const f=-move.y,r=-move.x;if(Math.abs(f)+Math.abs(r)>.04){const a=yaw+Math.atan2(r,f);cat.position.x+=Math.sin(a)*speed*dt;cat.position.z+=Math.cos(a)*speed*dt;cat.rotation.y=a;cat.position.x=Math.max(-7.3,Math.min(7.3,cat.position.x));cat.position.z=Math.max(-7.3,Math.min(7.3,cat.position.z))}
  vy-=9.8*dt;cat.position.y+=vy*dt;if(cat.position.y<=0){cat.position.y=0;vy=0;onGround=true}const target=cat.position.clone().add(new THREE.Vector3(0,.62,0));const offset=new THREE.Vector3(Math.sin(yaw)*-3.3,1.65,Math.cos(yaw)*-3.3);camera.position.lerp(target.clone().add(offset),.12);camera.lookAt(target);renderer.render(scene,camera)}animate();
- addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+ addEventListener('resize',resizeRenderer);addEventListener('orientationchange',()=>setTimeout(resizeRenderer,150));
 }catch(e){status.textContent='3D load failed'}
 </script></body></html>
