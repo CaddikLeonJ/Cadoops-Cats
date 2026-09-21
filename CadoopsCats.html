@@ -17,32 +17,367 @@ canvas{display:block;position:absolute;left:0;top:0;width:100%!important;height:
 #jump{right:24px;bottom:max(32px,env(safe-area-inset-bottom));width:78px;height:78px}
 #run{right:116px;bottom:max(42px,env(safe-area-inset-bottom));width:62px;height:62px}
 #hint{position:absolute;bottom:max(122px,calc(env(safe-area-inset-bottom) + 122px));right:20px;font-size:12px;opacity:.85}
-</style></head><body>
-<div id="hud"><div id="brand">Cadoops' Cats<div id="ver">Prototype v0.0.5</div></div><div id="status">Loading 3D world…</div><div id="stick"><div id="knob"></div></div><button class="btn" id="jump">JUMP</button><button class="btn" id="run">RUN</button><div id="hint">Drag anywhere else to turn camera</div></div>
+</style>
+</head>
+<body>
+<div id="hud">
+  <div id="brand">Cadoops' Cats<div id="ver">Prototype v0.0.6</div></div>
+  <div id="status">Loading 3D world…</div>
+  <div id="stick"><div id="knob"></div></div>
+  <button class="btn" id="jump">JUMP</button>
+  <button class="btn" id="run">RUN</button>
+  <div id="hint">Drag anywhere else to turn camera</div>
+</div>
+
 <script type="module">
 const status=document.getElementById('status');
+
 try{
- const THREE=await import('https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js');
- const scene=new THREE.Scene();scene.background=new THREE.Color(0x91bdd6);scene.fog=new THREE.Fog(0x91bdd6,18,45);
- const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.05,100);
- const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;document.body.prepend(renderer.domElement);function resizeRenderer(){const w=Math.max(1,document.body.clientWidth||innerWidth),h=Math.max(1,document.body.clientHeight||innerHeight);renderer.setSize(w,h,false);renderer.domElement.style.width=w+'px';renderer.domElement.style.height=h+'px';camera.aspect=w/h;camera.updateProjectionMatrix()}resizeRenderer();requestAnimationFrame(resizeRenderer);setTimeout(resizeRenderer,100);setTimeout(resizeRenderer,500);
- scene.add(new THREE.HemisphereLight(0xfff4df,0x64745e,2.1));const sun=new THREE.DirectionalLight(0xffffff,2.2);sun.position.set(5,9,4);sun.castShadow=true;scene.add(sun);
- const floor=new THREE.Mesh(new THREE.PlaneGeometry(24,24),new THREE.MeshStandardMaterial({color:0xcaa97c,roughness:.9}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
- const grid=new THREE.GridHelper(24,24,0x8f7659,0xb79a76);grid.position.y=.004;scene.add(grid);
- const wallMat=new THREE.MeshStandardMaterial({color:0xe8dfd0});function box(x,y,z,w,h,d,mat=wallMat){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;scene.add(m);return m}
- box(0,1.5,-8,16,3,.25);box(-8,1.5,0,.25,3,16);box(8,1.5,0,.25,3,16);const sofaMat=new THREE.MeshStandardMaterial({color:0x667b70});box(-3,.45,-3,3.5,.8,1.3,sofaMat);box(-3,1,-3.55,3.5,1.1,.25,sofaMat);
- const cat=new THREE.Group(),fur=new THREE.MeshStandardMaterial({color:0x25282a,roughness:.85}),white=new THREE.MeshStandardMaterial({color:0xf4f1e8,roughness:.9});
- function part(g,p,s,mat=fur){const m=new THREE.Mesh(g,mat);m.position.set(...p);m.scale.set(...s);m.castShadow=true;cat.add(m);return m}
- part(new THREE.SphereGeometry(.5,20,14),[0,.48,0],[.75,.72,1.15]);part(new THREE.SphereGeometry(.38,20,14),[0,.72,.48],[.9,.9,.85]);part(new THREE.ConeGeometry(.16,.34,3),[-.22,1.02,.49],[1,1,1]);part(new THREE.ConeGeometry(.16,.34,3),[.22,1.02,.49],[1,1,1]);part(new THREE.SphereGeometry(.18,16,10),[0,.63,.77],[1.15,.75,.35],white);
- [[-.27,.24,.28],[.27,.24,.28],[-.27,.24,-.38],[.27,.24,-.38]].forEach(p=>part(new THREE.CylinderGeometry(.10,.12,.45,12),p,[1,1,1],white));const tail=part(new THREE.CylinderGeometry(.08,.12,1.05,12),[0,.67,-.72],[1,1,1]);tail.rotation.x=-1;cat.position.set(0,0,2);scene.add(cat);
- let yaw=0,vy=0,onGround=true,run=false;const move={x:0,y:0};const stick=document.getElementById('stick'),knob=document.getElementById('knob');let sid=null;
- function stickMove(e){const r=stick.getBoundingClientRect(),dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2),len=Math.hypot(dx,dy)||1,max=42,k=Math.min(1,max/len);knob.style.transform=`translate(${dx*k}px,${dy*k}px)`;move.x=dx/Math.max(max,len);move.y=dy/Math.max(max,len)}
- stick.addEventListener('pointerdown',e=>{sid=e.pointerId;stick.setPointerCapture(sid);stickMove(e)});stick.addEventListener('pointermove',e=>{if(e.pointerId===sid)stickMove(e)});function endStick(e){if(e.pointerId===sid){sid=null;move.x=move.y=0;knob.style.transform=''}}stick.addEventListener('pointerup',endStick);stick.addEventListener('pointercancel',endStick);
- const runBtn=document.getElementById('run');runBtn.addEventListener('pointerdown',()=>run=true);['pointerup','pointercancel','pointerleave'].forEach(x=>runBtn.addEventListener(x,()=>run=false));document.getElementById('jump').addEventListener('pointerdown',()=>{if(onGround){vy=4.1;onGround=false}});
- let lookId=null,lastX=0;renderer.domElement.addEventListener('pointerdown',e=>{lookId=e.pointerId;lastX=e.clientX;renderer.domElement.setPointerCapture(lookId)});renderer.domElement.addEventListener('pointermove',e=>{if(e.pointerId===lookId){yaw-=(e.clientX-lastX)*.008;lastX=e.clientX}});renderer.domElement.addEventListener('pointerup',e=>{if(e.pointerId===lookId)lookId=null});
- const clock=new THREE.Clock();status.textContent='Test Room • Cat ready';
- function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.033),speed=run?4.2:2.2;const f=-move.y,r=-move.x;if(Math.abs(f)+Math.abs(r)>.04){const a=yaw+Math.atan2(r,f);cat.position.x+=Math.sin(a)*speed*dt;cat.position.z+=Math.cos(a)*speed*dt;cat.rotation.y=a;cat.position.x=Math.max(-7.3,Math.min(7.3,cat.position.x));cat.position.z=Math.max(-7.3,Math.min(7.3,cat.position.z))}
- vy-=9.8*dt;cat.position.y+=vy*dt;if(cat.position.y<=0){cat.position.y=0;vy=0;onGround=true}const target=cat.position.clone().add(new THREE.Vector3(0,.62,0));const offset=new THREE.Vector3(Math.sin(yaw)*-3.3,1.65,Math.cos(yaw)*-3.3);camera.position.lerp(target.clone().add(offset),.12);camera.lookAt(target);renderer.render(scene,camera)}animate();
- addEventListener('resize',resizeRenderer);addEventListener('orientationchange',()=>setTimeout(resizeRenderer,150));
-}catch(e){status.textContent='3D load failed'}
-</script></body></html>
+  const THREE=await import('https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js');
+
+  const scene=new THREE.Scene();
+  scene.background=new THREE.Color(0x91bdd6);
+  scene.fog=new THREE.Fog(0x91bdd6,18,45);
+
+  const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.05,100);
+  const renderer=new THREE.WebGLRenderer({antialias:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.shadowMap.enabled=true;
+  renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  document.body.prepend(renderer.domElement);
+
+  function resizeRenderer(){
+    const w=Math.max(1,document.body.clientWidth||innerWidth);
+    const h=Math.max(1,document.body.clientHeight||innerHeight);
+    renderer.setSize(w,h,false);
+    renderer.domElement.style.width=w+'px';
+    renderer.domElement.style.height=h+'px';
+    camera.aspect=w/h;
+    camera.updateProjectionMatrix();
+  }
+  resizeRenderer();
+  requestAnimationFrame(resizeRenderer);
+  setTimeout(resizeRenderer,100);
+  setTimeout(resizeRenderer,500);
+
+  scene.add(new THREE.HemisphereLight(0xfff4df,0x64745e,2.15));
+  const sun=new THREE.DirectionalLight(0xffffff,2.25);
+  sun.position.set(5,9,4);
+  sun.castShadow=true;
+  sun.shadow.mapSize.set(1024,1024);
+  scene.add(sun);
+
+  const floor=new THREE.Mesh(
+    new THREE.PlaneGeometry(24,24),
+    new THREE.MeshStandardMaterial({color:0xcaa97c,roughness:.92})
+  );
+  floor.rotation.x=-Math.PI/2;
+  floor.receiveShadow=true;
+  scene.add(floor);
+
+  const grid=new THREE.GridHelper(24,24,0x8f7659,0xb79a76);
+  grid.position.y=.004;
+  scene.add(grid);
+
+  const wallMat=new THREE.MeshStandardMaterial({color:0xe8dfd0,roughness:.9});
+  function box(x,y,z,w,h,d,mat=wallMat){
+    const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
+    m.position.set(x,y,z);
+    m.castShadow=m.receiveShadow=true;
+    scene.add(m);
+    return m;
+  }
+
+  box(0,1.5,-8,16,3,.25);
+  box(-8,1.5,0,.25,3,16);
+  box(8,1.5,0,.25,3,16);
+
+  const sofaMat=new THREE.MeshStandardMaterial({color:0x667b70,roughness:.9});
+  box(-3,.45,-3,3.5,.8,1.3,sofaMat);
+  box(-3,1,-3.55,3.5,1.1,.25,sofaMat);
+
+  // --- Cat model ---
+  const cat=new THREE.Group();
+  cat.position.set(0,0,2);
+  scene.add(cat);
+
+  const black=new THREE.MeshStandardMaterial({color:0x202326,roughness:.88});
+  const white=new THREE.MeshStandardMaterial({color:0xf1efe8,roughness:.95});
+  const pink=new THREE.MeshStandardMaterial({color:0xc97e7a,roughness:.75});
+  const eyeMat=new THREE.MeshStandardMaterial({color:0x9ab85d,roughness:.35,metalness:.05});
+  const pupilMat=new THREE.MeshStandardMaterial({color:0x080808,roughness:.4});
+
+  function mesh(parent,geometry,material,pos,scale=[1,1,1],rot=[0,0,0]){
+    const m=new THREE.Mesh(geometry,material);
+    m.position.set(...pos);
+    m.scale.set(...scale);
+    m.rotation.set(...rot);
+    m.castShadow=true;
+    m.receiveShadow=true;
+    parent.add(m);
+    return m;
+  }
+
+  // Torso and shoulders
+  mesh(cat,new THREE.SphereGeometry(.5,20,16),black,[0,.58,-.05],[.70,.66,1.22]);
+  mesh(cat,new THREE.SphereGeometry(.36,18,14),black,[0,.67,.45],[.88,.90,.95]);
+
+  // White chest
+  mesh(cat,new THREE.SphereGeometry(.25,16,12),white,[0,.55,.49],[.78,1.15,.45]);
+
+  // Head
+  const head=new THREE.Group();
+  head.position.set(0,.88,.68);
+  cat.add(head);
+  mesh(head,new THREE.SphereGeometry(.34,20,16),black,[0,0,0],[1,.92,.96]);
+
+  // Muzzle
+  mesh(head,new THREE.SphereGeometry(.15,16,12),white,[-.10,-.08,.29],[1.05,.82,.75]);
+  mesh(head,new THREE.SphereGeometry(.15,16,12),white,[ .10,-.08,.29],[1.05,.82,.75]);
+  mesh(head,new THREE.SphereGeometry(.07,12,10),pink,[0,-.045,.405],[1.1,.72,.9]);
+
+  // Ears
+  mesh(head,new THREE.ConeGeometry(.16,.34,3),black,[-.21,.28,.02],[1,1,.72],[0,0,-.05]);
+  mesh(head,new THREE.ConeGeometry(.16,.34,3),black,[ .21,.28,.02],[1,1,.72],[0,0,.05]);
+  mesh(head,new THREE.ConeGeometry(.095,.22,3),pink,[-.21,.285,.045],[1,1,.55],[0,0,-.05]);
+  mesh(head,new THREE.ConeGeometry(.095,.22,3),pink,[ .21,.285,.045],[1,1,.55],[0,0,.05]);
+
+  // Eyes
+  function addEye(x){
+    mesh(head,new THREE.SphereGeometry(.074,14,10),eyeMat,[x,.055,.305],[1,.85,.42]);
+    mesh(head,new THREE.SphereGeometry(.036,12,8),pupilMat,[x,.055,.337],[.45,1,.35]);
+  }
+  addEye(-.13); addEye(.13);
+
+  // Legs
+  const legs=[];
+  function makeLeg(x,z,isFront){
+    const leg=new THREE.Group();
+    leg.position.set(x,.44,z);
+    cat.add(leg);
+    mesh(leg,new THREE.CylinderGeometry(.085,.095,.38,10),black,[0,-.17,0],[1,1,1]);
+    mesh(leg,new THREE.SphereGeometry(.105,12,9),white,[0,-.37,.055],[1.05,.62,1.38]);
+    leg.userData.isFront=isFront;
+    legs.push(leg);
+    return leg;
+  }
+  makeLeg(-.245,.39,true);
+  makeLeg( .245,.39,true);
+  makeLeg(-.245,-.43,false);
+  makeLeg( .245,-.43,false);
+
+  // Tail made from linked segments for a curved silhouette.
+  const tailRoot=new THREE.Group();
+  tailRoot.position.set(0,.69,-.61);
+  cat.add(tailRoot);
+
+  const tailSegments=[];
+  let tailParent=tailRoot;
+  for(let i=0;i<5;i++){
+    const seg=new THREE.Group();
+    seg.position.set(0,0,i===0?0:-.24);
+    tailParent.add(seg);
+    const t=mesh(seg,new THREE.CylinderGeometry(.065-i*.006,.078-i*.006,.30,10),black,[0,.02,-.13],[1,1,1],[Math.PI/2,0,0]);
+    tailSegments.push(seg);
+    tailParent=seg;
+  }
+  tailRoot.rotation.x=-.30;
+
+  // --- Controls ---
+  let cameraYaw=0;
+  let vy=0;
+  let onGround=true;
+  let runHeld=false;
+  let currentSpeed=0;
+  let movePhase=0;
+  const move={x:0,y:0};
+
+  const stick=document.getElementById('stick');
+  const knob=document.getElementById('knob');
+  let sid=null;
+
+  function stickMove(e){
+    const r=stick.getBoundingClientRect();
+    const dx=e.clientX-(r.left+r.width/2);
+    const dy=e.clientY-(r.top+r.height/2);
+    const len=Math.hypot(dx,dy)||1;
+    const max=42;
+    const k=Math.min(1,max/len);
+    knob.style.transform=`translate(${dx*k}px,${dy*k}px)`;
+    move.x=dx/Math.max(max,len);
+    move.y=dy/Math.max(max,len);
+  }
+
+  stick.addEventListener('pointerdown',e=>{
+    sid=e.pointerId;
+    stick.setPointerCapture(sid);
+    stickMove(e);
+  });
+  stick.addEventListener('pointermove',e=>{
+    if(e.pointerId===sid)stickMove(e);
+  });
+  function endStick(e){
+    if(e.pointerId===sid){
+      sid=null;
+      move.x=move.y=0;
+      knob.style.transform='';
+    }
+  }
+  stick.addEventListener('pointerup',endStick);
+  stick.addEventListener('pointercancel',endStick);
+
+  const runBtn=document.getElementById('run');
+  runBtn.addEventListener('pointerdown',()=>runHeld=true);
+  ['pointerup','pointercancel','pointerleave'].forEach(x=>runBtn.addEventListener(x,()=>runHeld=false));
+
+  document.getElementById('jump').addEventListener('pointerdown',()=>{
+    if(onGround){
+      vy=3.85;
+      onGround=false;
+    }
+  });
+
+  let lookId=null,lastX=0;
+  renderer.domElement.addEventListener('pointerdown',e=>{
+    lookId=e.pointerId;
+    lastX=e.clientX;
+    renderer.domElement.setPointerCapture(lookId);
+  });
+  renderer.domElement.addEventListener('pointermove',e=>{
+    if(e.pointerId===lookId){
+      cameraYaw-=(e.clientX-lastX)*.007;
+      lastX=e.clientX;
+    }
+  });
+  renderer.domElement.addEventListener('pointerup',e=>{
+    if(e.pointerId===lookId)lookId=null;
+  });
+  renderer.domElement.addEventListener('pointercancel',e=>{
+    if(e.pointerId===lookId)lookId=null;
+  });
+
+  function angleDelta(a,b){
+    return Math.atan2(Math.sin(b-a),Math.cos(b-a));
+  }
+
+  const clock=new THREE.Clock();
+  const camPos=new THREE.Vector3();
+  status.textContent='Test Room • Cat ready';
+
+  function animate(){
+    requestAnimationFrame(animate);
+    const dt=Math.min(clock.getDelta(),.033);
+
+    const inputMag=Math.min(1,Math.hypot(move.x,move.y));
+    const moving=inputMag>.06;
+
+    let desiredSpeed=0;
+    if(moving){
+      const walkSpeed=1.75;
+      const runSpeed=4.35;
+      desiredSpeed=(runHeld?runSpeed:walkSpeed)*inputMag;
+    }
+
+    const accel=moving?(runHeld?6.8:5.2):7.6;
+    const speedStep=accel*dt;
+    if(currentSpeed<desiredSpeed)currentSpeed=Math.min(desiredSpeed,currentSpeed+speedStep);
+    else currentSpeed=Math.max(desiredSpeed,currentSpeed-speedStep);
+
+    if(moving){
+      const forward=-move.y;
+      const right=-move.x;
+      const desiredAngle=cameraYaw+Math.atan2(right,forward);
+
+      // Smooth body rotation instead of snapping.
+      cat.rotation.y+=angleDelta(cat.rotation.y,desiredAngle)*Math.min(1,9*dt);
+
+      // Movement follows input direction immediately while body catches up visually.
+      cat.position.x+=Math.sin(desiredAngle)*currentSpeed*dt;
+      cat.position.z+=Math.cos(desiredAngle)*currentSpeed*dt;
+    }
+
+    cat.position.x=Math.max(-7.3,Math.min(7.3,cat.position.x));
+    cat.position.z=Math.max(-7.3,Math.min(7.3,cat.position.z));
+
+    // Jump / gravity
+    vy-=8.9*dt;
+    cat.position.y+=vy*dt;
+    if(cat.position.y<=0){
+      cat.position.y=0;
+      vy=0;
+      onGround=true;
+    }
+
+    // Procedural cat gait
+    const gait=Math.min(1,currentSpeed/4.35);
+    if(currentSpeed>.08 && onGround){
+      movePhase+=dt*(runHeld?11.5:7.2)*(0.45+gait*.65);
+      const swing=Math.sin(movePhase)*(runHeld?.50:.34)*gait;
+      legs[0].rotation.x=swing;
+      legs[3].rotation.x=swing;
+      legs[1].rotation.x=-swing;
+      legs[2].rotation.x=-swing;
+      const bob=Math.abs(Math.sin(movePhase*2))*0.018*gait;
+      cat.children[0].position.y=.58+bob;
+      head.position.y=.88+bob*.6;
+    }else{
+      for(const leg of legs)leg.rotation.x*=Math.max(0,1-9*dt);
+      head.position.y+=(0.88-head.position.y)*Math.min(1,8*dt);
+    }
+
+    // Tuck legs slightly in the air.
+    if(!onGround){
+      for(let i=0;i<legs.length;i++){
+        const target=legs[i].userData.isFront?-.32:.34;
+        legs[i].rotation.x+=(target-legs[i].rotation.x)*Math.min(1,8*dt);
+      }
+    }
+
+    // Tail gives the cat a little life even when standing still.
+    const t=performance.now()*.001;
+    tailRoot.rotation.y=Math.sin(t*1.7)*.20 + (moving?Math.sin(movePhase*.5)*.08:0);
+    tailSegments.forEach((seg,i)=>{
+      seg.rotation.y=Math.sin(t*1.5-i*.32)*(.07+i*.01);
+      seg.rotation.x=-.03-i*.018;
+    });
+
+    // Small head stabilization while running.
+    head.rotation.z=Math.sin(movePhase)*.012*gait;
+
+    // Smoother third-person camera.
+    const target=cat.position.clone().add(new THREE.Vector3(0,.70,0));
+    const dist=3.15;
+    const desiredCam=target.clone().add(
+      new THREE.Vector3(
+        Math.sin(cameraYaw)*-dist,
+        1.52,
+        Math.cos(cameraYaw)*-dist
+      )
+    );
+    const camBlend=1-Math.pow(.001,dt);
+    camera.position.lerp(desiredCam,camBlend);
+    camera.lookAt(target);
+
+    if(!onGround)status.textContent='Test Room • Jumping';
+    else if(currentSpeed>2.5)status.textContent='Test Room • Running';
+    else if(currentSpeed>.12)status.textContent='Test Room • Walking';
+    else status.textContent='Test Room • Cat ready';
+
+    renderer.render(scene,camera);
+  }
+
+  animate();
+
+  addEventListener('resize',resizeRenderer);
+  addEventListener('orientationchange',()=>setTimeout(resizeRenderer,150));
+
+}catch(e){
+  status.textContent='3D load failed';
+  document.body.insertAdjacentHTML(
+    'beforeend',
+    '<div style="position:fixed;top:45%;left:10%;right:10%;padding:18px;background:#fff;color:#222;border-radius:14px;text-align:center">Could not load the 3D engine.<br><small>'+String(e.message).replaceAll('<','&lt;')+'</small></div>'
+  );
+}
+</script>
+</body>
+</html>
