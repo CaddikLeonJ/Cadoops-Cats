@@ -5,8 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Cadoops' Cats</title>
 <style>
-html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#87b8d8;font-family:-apple-system,BlinkMacSystemFont,sans-serif;touch-action:none} body{position:fixed;inset:0}
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#87b8d8;font-family:-apple-system,BlinkMacSystemFont,sans-serif;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none} body{position:fixed;inset:0}
 canvas{display:block;position:absolute;left:0;top:0;width:100%!important;height:100%!important}
+button,#hud,#stick,#knob,#hint,#brand,#ver,#status{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;touch-action:none}
+button{appearance:none;-webkit-appearance:none}
 #hud{position:fixed;inset:0;pointer-events:none;color:white;text-shadow:0 2px 4px #0008}
 #brand{position:absolute;top:max(14px,env(safe-area-inset-top));left:16px;font-weight:800;font-size:20px}
 #ver{font-size:12px;opacity:.8;margin-top:2px}
@@ -21,7 +23,7 @@ canvas{display:block;position:absolute;left:0;top:0;width:100%!important;height:
 </head>
 <body>
 <div id="hud">
-  <div id="brand">Cadoops' Cats<div id="ver">Prototype v0.0.7</div></div>
+  <div id="brand">Cadoops' Cats<div id="ver">Prototype v0.0.8</div></div>
   <div id="status">Loading 3D world…</div>
   <div id="stick"><div id="knob"></div></div>
   <button class="btn" id="jump">JUMP</button>
@@ -31,6 +33,8 @@ canvas{display:block;position:absolute;left:0;top:0;width:100%!important;height:
 
 <script type="module">
 const status=document.getElementById('status');
+document.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('selectstart',e=>e.preventDefault());
 
 try{
   const THREE=await import('https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js');
@@ -212,6 +216,7 @@ try{
   }
 
   stick.addEventListener('pointerdown',e=>{
+    e.preventDefault();
     sid=e.pointerId;
     stick.setPointerCapture(sid);
     stickMove(e);
@@ -230,10 +235,10 @@ try{
   stick.addEventListener('pointercancel',endStick);
 
   const runBtn=document.getElementById('run');
-  runBtn.addEventListener('pointerdown',()=>runHeld=true);
+  runBtn.addEventListener('pointerdown',e=>{e.preventDefault();runHeld=true});
   ['pointerup','pointercancel','pointerleave'].forEach(x=>runBtn.addEventListener(x,()=>runHeld=false));
 
-  document.getElementById('jump').addEventListener('pointerdown',()=>{
+  document.getElementById('jump').addEventListener('pointerdown',e=>{e.preventDefault();
     if(onGround){
       vy=3.85;
       onGround=false;
