@@ -11,7 +11,7 @@ button,#hud,#stick,#knob,#hint,#brand,#ver,#status{-webkit-user-select:none;user
 button{appearance:none;-webkit-appearance:none}
 #hud{position:fixed;inset:0;pointer-events:none;color:white;text-shadow:0 2px 4px #0008}
 #brand{position:absolute;top:max(14px,env(safe-area-inset-top));left:16px;font-weight:800;font-size:20px}
-#ver{font-size:12px;opacity:.8;margin-top:2px}
+#ver{font-size:12px;opacity:.8;margin-top:2px}#age{font-size:12px;opacity:.9;margin-top:3px}
 #status{position:absolute;top:max(14px,env(safe-area-inset-top));right:16px;font-size:13px}
 #stick{pointer-events:auto;position:absolute;left:24px;bottom:max(28px,env(safe-area-inset-bottom));width:118px;height:118px;border-radius:50%;background:#ffffff28;border:2px solid #ffffff55}
 #knob{position:absolute;left:34px;top:34px;width:50px;height:50px;border-radius:50%;background:#ffffffaa}
@@ -23,7 +23,7 @@ button{appearance:none;-webkit-appearance:none}
 </head>
 <body>
 <div id="hud">
-  <div id="brand">Cadoops' Cats<div id="ver">Prototype v0.0.8</div></div>
+  <div id="brand">Cadoops' Cats<div id="ver">Prototype v0.0.9</div><div id="age">Kitten • 10 weeks</div></div>
   <div id="status">Loading 3D world…</div>
   <div id="stick"><div id="knob"></div></div>
   <button class="btn" id="jump">JUMP</button>
@@ -33,6 +33,7 @@ button{appearance:none;-webkit-appearance:none}
 
 <script type="module">
 const status=document.getElementById('status');
+const ageLabel=document.getElementById('age');
 document.addEventListener('contextmenu',e=>e.preventDefault());
 document.addEventListener('selectstart',e=>e.preventDefault());
 
@@ -103,16 +104,22 @@ try{
   box(-3,.45,-3,3.5,.8,1.3,sofaMat);
   box(-3,1,-3.55,3.5,1.1,.25,sofaMat);
 
-  // --- Cat model ---
+  // --- Cat model / life-stage rig ---
   const cat=new THREE.Group();
   cat.position.set(0,0,2);
   scene.add(cat);
 
-  const black=new THREE.MeshStandardMaterial({color:0x202326,roughness:.88});
-  const white=new THREE.MeshStandardMaterial({color:0xf1efe8,roughness:.95});
-  const pink=new THREE.MeshStandardMaterial({color:0xc97e7a,roughness:.75});
-  const eyeMat=new THREE.MeshStandardMaterial({color:0x9ab85d,roughness:.35,metalness:.05});
-  const pupilMat=new THREE.MeshStandardMaterial({color:0x080808,roughness:.4});
+  // The visible model lives under a separate rig so age can change proportions
+  // without affecting world position, physics or facing.
+  const catRig=new THREE.Group();
+  cat.add(catRig);
+
+  const black=new THREE.MeshStandardMaterial({color:0x202326,roughness:.9});
+  const white=new THREE.MeshStandardMaterial({color:0xf1efe8,roughness:.96});
+  const pink=new THREE.MeshStandardMaterial({color:0xd68d89,roughness:.8});
+  const innerEar=new THREE.MeshStandardMaterial({color:0xb86f73,roughness:.85});
+  const eyeMat=new THREE.MeshStandardMaterial({color:0x9fbf62,roughness:.32,metalness:.03});
+  const pupilMat=new THREE.MeshStandardMaterial({color:0x060606,roughness:.42});
 
   function mesh(parent,geometry,material,pos,scale=[1,1,1],rot=[0,0,0]){
     const m=new THREE.Mesh(geometry,material);
@@ -125,70 +132,170 @@ try{
     return m;
   }
 
-  // Torso and shoulders
-  mesh(cat,new THREE.SphereGeometry(.5,20,16),black,[0,.58,-.05],[.70,.66,1.22]);
-  mesh(cat,new THREE.SphereGeometry(.36,18,14),black,[0,.67,.45],[.88,.90,.95]);
+  // Body references are kept so they can gradually change with age.
+  const torso=mesh(catRig,new THREE.SphereGeometry(.5,22,16),black,[0,.58,-.05],[.70,.66,1.22]);
+  const shoulders=mesh(catRig,new THREE.SphereGeometry(.36,20,15),black,[0,.67,.44],[.86,.88,.92]);
+  const chest=mesh(catRig,new THREE.SphereGeometry(.25,18,13),white,[0,.55,.48],[.72,1.08,.40]);
 
-  // White chest
-  mesh(cat,new THREE.SphereGeometry(.25,16,12),white,[0,.55,.49],[.78,1.15,.45]);
-
-  // Head
   const head=new THREE.Group();
   head.position.set(0,.88,.68);
-  cat.add(head);
-  mesh(head,new THREE.SphereGeometry(.34,20,16),black,[0,0,0],[1,.92,.96]);
+  catRig.add(head);
+  const headMesh=mesh(head,new THREE.SphereGeometry(.34,22,17),black,[0,0,0],[1,.94,.95]);
 
-  // Muzzle
-  mesh(head,new THREE.SphereGeometry(.15,16,12),white,[-.10,-.08,.29],[1.05,.82,.75]);
-  mesh(head,new THREE.SphereGeometry(.15,16,12),white,[ .10,-.08,.29],[1.05,.82,.75]);
-  mesh(head,new THREE.SphereGeometry(.07,12,10),pink,[0,-.045,.405],[1.1,.72,.9]);
+  const muzzleL=mesh(head,new THREE.SphereGeometry(.14,16,12),white,[-.095,-.085,.285],[.94,.76,.62]);
+  const muzzleR=mesh(head,new THREE.SphereGeometry(.14,16,12),white,[ .095,-.085,.285],[.94,.76,.62]);
+  const nose=mesh(head,new THREE.SphereGeometry(.062,14,10),pink,[0,-.045,.382],[1.05,.68,.82]);
 
-  // Ears
-  mesh(head,new THREE.ConeGeometry(.16,.34,3),black,[-.21,.28,.02],[1,1,.72],[0,0,-.05]);
-  mesh(head,new THREE.ConeGeometry(.16,.34,3),black,[ .21,.28,.02],[1,1,.72],[0,0,.05]);
-  mesh(head,new THREE.ConeGeometry(.095,.22,3),pink,[-.21,.285,.045],[1,1,.55],[0,0,-.05]);
-  mesh(head,new THREE.ConeGeometry(.095,.22,3),pink,[ .21,.285,.045],[1,1,.55],[0,0,.05]);
+  const earL=mesh(head,new THREE.ConeGeometry(.155,.32,3),black,[-.205,.275,.015],[1,1,.70],[0,0,-.05]);
+  const earR=mesh(head,new THREE.ConeGeometry(.155,.32,3),black,[ .205,.275,.015],[1,1,.70],[0,0,.05]);
+  mesh(head,new THREE.ConeGeometry(.09,.205,3),innerEar,[-.205,.277,.040],[1,1,.52],[0,0,-.05]);
+  mesh(head,new THREE.ConeGeometry(.09,.205,3),innerEar,[ .205,.277,.040],[1,1,.52],[0,0,.05]);
 
-  // Eyes
+  const eyes=[];
   function addEye(x){
-    mesh(head,new THREE.SphereGeometry(.074,14,10),eyeMat,[x,.055,.305],[1,.85,.42]);
-    mesh(head,new THREE.SphereGeometry(.036,12,8),pupilMat,[x,.055,.337],[.45,1,.35]);
+    const eye=new THREE.Group();
+    eye.position.set(x,.055,.298);
+    head.add(eye);
+    mesh(eye,new THREE.SphereGeometry(.072,15,11),eyeMat,[0,0,0],[1,.88,.38]);
+    mesh(eye,new THREE.SphereGeometry(.034,12,9),pupilMat,[0,0,.030],[.42,1,.30]);
+    eyes.push(eye);
   }
-  addEye(-.13); addEye(.13);
+  addEye(-.13);
+  addEye(.13);
 
-  // Legs
   const legs=[];
   function makeLeg(x,z,isFront){
     const leg=new THREE.Group();
     leg.position.set(x,.44,z);
-    cat.add(leg);
-    mesh(leg,new THREE.CylinderGeometry(.085,.095,.38,10),black,[0,-.17,0],[1,1,1]);
-    mesh(leg,new THREE.SphereGeometry(.105,12,9),white,[0,-.37,.055],[1.05,.62,1.38]);
+    catRig.add(leg);
+    mesh(leg,new THREE.CylinderGeometry(.078,.09,.36,10),black,[0,-.16,0],[1,1,1]);
+    mesh(leg,new THREE.SphereGeometry(.102,12,9),white,[0,-.355,.045],[1.02,.58,1.34]);
     leg.userData.isFront=isFront;
     legs.push(leg);
     return leg;
   }
-  makeLeg(-.245,.39,true);
-  makeLeg( .245,.39,true);
-  makeLeg(-.245,-.43,false);
-  makeLeg( .245,-.43,false);
+  makeLeg(-.235,.38,true);
+  makeLeg( .235,.38,true);
+  makeLeg(-.235,-.42,false);
+  makeLeg( .235,-.42,false);
 
-  // Tail made from linked segments for a curved silhouette.
   const tailRoot=new THREE.Group();
   tailRoot.position.set(0,.69,-.61);
-  cat.add(tailRoot);
+  catRig.add(tailRoot);
 
   const tailSegments=[];
   let tailParent=tailRoot;
-  for(let i=0;i<5;i++){
+  for(let i=0;i<6;i++){
     const seg=new THREE.Group();
-    seg.position.set(0,0,i===0?0:-.24);
+    seg.position.set(0,0,i===0?0:-.21);
     tailParent.add(seg);
-    const t=mesh(seg,new THREE.CylinderGeometry(.065-i*.006,.078-i*.006,.30,10),black,[0,.02,-.13],[1,1,1],[Math.PI/2,0,0]);
+    mesh(seg,new THREE.CylinderGeometry(.052-i*.004,.070-i*.004,.27,10),black,[0,.02,-.12],[1,1,1],[Math.PI/2,0,0]);
     tailSegments.push(seg);
     tailParent=seg;
   }
-  tailRoot.rotation.x=-.30;
+  tailRoot.rotation.x=-.34;
+
+  // --- Age / growth ---
+  // Prototype clock is deliberately accelerated so growth can actually be tested:
+  // 1 real minute = 4 in-game weeks. The final game will use the chosen lifespan setting.
+  let ageWeeks=10;
+  const AGE_WEEKS_PER_SECOND=4/60;
+  let lifeStage='Kitten';
+  let ageAdultness=0;
+  let visualScale=.54;
+  let stamina=1;
+  let tired=false;
+
+  const LIFE_STAGES={
+    Newborn:{min:0,max:4},
+    Kitten:{min:4,max:26},
+    Adolescent:{min:26,max:52},
+    Adult:{min:52,max:416},
+    Senior:{min:416,max:Infinity}
+  };
+
+  function clamp01(v){return Math.max(0,Math.min(1,v))}
+  function smooth01(v){
+    v=clamp01(v);
+    return v*v*(3-2*v);
+  }
+  function mix(a,b,t){return a+(b-a)*t}
+
+  function stageForAge(w){
+    if(w<4)return 'Newborn';
+    if(w<26)return 'Kitten';
+    if(w<52)return 'Adolescent';
+    if(w<416)return 'Adult';
+    return 'Senior';
+  }
+
+  function formatAge(w){
+    if(w<52)return Math.max(1,Math.floor(w))+' weeks';
+    const years=w/52;
+    if(years<2)return years.toFixed(1)+' years';
+    return Math.floor(years)+' years';
+  }
+
+  function updateGrowth(){
+    lifeStage=stageForAge(ageWeeks);
+
+    // adultness is 0 at birth and reaches 1 at one year old.
+    ageAdultness=smooth01(ageWeeks/52);
+
+    let overall;
+    if(ageWeeks<4){
+      overall=mix(.28,.43,smooth01(ageWeeks/4));
+    }else if(ageWeeks<26){
+      overall=mix(.43,.68,smooth01((ageWeeks-4)/22));
+    }else if(ageWeeks<52){
+      overall=mix(.68,1.0,smooth01((ageWeeks-26)/26));
+    }else{
+      overall=1.0;
+    }
+
+    // Our playable kitten starts intentionally much smaller than the old v0.0.8 cat.
+    visualScale=overall;
+    catRig.scale.setScalar(overall);
+
+    // Kittens have a larger rounder head, larger eyes, short muzzle and short legs.
+    const youth=1-ageAdultness;
+    const headRel=mix(1.0,1.28,youth);
+    head.scale.setScalar(headRel);
+
+    const eyeRel=mix(1.0,1.22,youth);
+    eyes.forEach(e=>e.scale.setScalar(eyeRel));
+
+    const muzzleDepth=mix(1.0,.72,youth);
+    muzzleL.scale.z=.62*muzzleDepth;
+    muzzleR.scale.z=.62*muzzleDepth;
+    nose.position.z=mix(.382,.355,youth);
+
+    const legY=mix(1.0,.70,youth);
+    legs.forEach(leg=>{
+      leg.scale.y=legY;
+      leg.position.y=mix(.44,.395,youth);
+    });
+
+    // Body lengthens and becomes less round as the kitten matures.
+    torso.scale.z=mix(1.22,1.08,youth);
+    torso.scale.y=mix(.66,.72,youth);
+    shoulders.scale.z=mix(.92,.86,youth);
+
+    // Tail begins a little shorter and finer.
+    const tailRel=mix(1.0,.76,youth);
+    tailRoot.scale.set(tailRel,tailRel,tailRel);
+
+    // Senior cats keep adult size but carry themselves a little lower.
+    if(lifeStage==='Senior'){
+      catRig.position.y=-.025;
+      head.position.y=.855;
+    }else{
+      catRig.position.y=0;
+    }
+
+    ageLabel.textContent=lifeStage+' • '+formatAge(ageWeeks);
+  }
+  updateGrowth();
 
   // --- Controls ---
   let cameraYaw=0;
@@ -198,6 +305,7 @@ try{
   let currentSpeed=0;
   let movePhase=0;
   const move={x:0,y:0};
+  let idlePhase=0;
 
   const stick=document.getElementById('stick');
   const knob=document.getElementById('knob');
@@ -239,8 +347,10 @@ try{
   ['pointerup','pointercancel','pointerleave'].forEach(x=>runBtn.addEventListener(x,()=>runHeld=false));
 
   document.getElementById('jump').addEventListener('pointerdown',e=>{e.preventDefault();
-    if(onGround){
-      vy=3.85;
+    if(onGround && lifeStage!=='Newborn'){
+      // Kittens start with a smaller hop and gain jump strength as they mature.
+      const jumpStrength=mix(2.85,3.95,ageAdultness)*(lifeStage==='Senior'?.86:1);
+      vy=jumpStrength;
       onGround=false;
     }
   });
@@ -277,17 +387,36 @@ try{
     resizeRenderer();
     const dt=Math.min(clock.getDelta(),.033);
 
+    ageWeeks+=AGE_WEEKS_PER_SECOND*dt;
+    updateGrowth();
+
     const inputMag=Math.min(1,Math.hypot(move.x,move.y));
     const moving=inputMag>.06;
 
     let desiredSpeed=0;
-    if(moving){
-      const walkSpeed=1.75;
-      const runSpeed=4.35;
-      desiredSpeed=(runHeld?runSpeed:walkSpeed)*inputMag;
+    if(moving && lifeStage!=='Newborn'){
+      // Young kittens are slower; speed and coordination improve with age.
+      const youthMove=mix(.66,1.0,ageAdultness);
+      const seniorMove=lifeStage==='Senior'?.78:1;
+      const walkSpeed=1.75*youthMove*seniorMove;
+      const runSpeed=4.35*youthMove*seniorMove;
+
+      // Running drains stamina fastest when young. Walking always remains available.
+      if(runHeld && !tired){
+        stamina-=dt*mix(.22,.10,ageAdultness);
+      }else{
+        stamina+=dt*mix(.18,.26,ageAdultness);
+      }
+      stamina=Math.max(0,Math.min(1,stamina));
+      if(stamina<=.03)tired=true;
+      if(stamina>=.40)tired=false;
+
+      desiredSpeed=((runHeld&&!tired)?runSpeed:walkSpeed)*inputMag;
+    }else{
+      stamina=Math.min(1,stamina+dt*.24);
     }
 
-    const accel=moving?(runHeld?6.8:5.2):7.6;
+    const accel=moving?mix(4.3,6.8,ageAdultness):7.6;
     const speedStep=accel*dt;
     if(currentSpeed<desiredSpeed)currentSpeed=Math.min(desiredSpeed,currentSpeed+speedStep);
     else currentSpeed=Math.max(desiredSpeed,currentSpeed-speedStep);
@@ -308,8 +437,9 @@ try{
     cat.position.x=Math.max(-7.3,Math.min(7.3,cat.position.x));
     cat.position.z=Math.max(-7.3,Math.min(7.3,cat.position.z));
 
-    // Jump / gravity
-    vy-=8.9*dt;
+    // Jump / gravity. Very young cats have a softer, shorter arc.
+    const gravity=mix(8.1,8.9,ageAdultness);
+    vy-=gravity*dt;
     cat.position.y+=vy*dt;
     if(cat.position.y<=0){
       cat.position.y=0;
@@ -317,8 +447,10 @@ try{
       onGround=true;
     }
 
-    // Procedural cat gait
-    const gait=Math.min(1,currentSpeed/4.35);
+    // Procedural cat gait. Young kittens are bouncier and slightly clumsier.
+    const adultRun=4.35;
+    const gait=Math.min(1,currentSpeed/adultRun);
+    const youth=1-ageAdultness;
     if(currentSpeed>.08 && onGround){
       movePhase+=dt*(runHeld?11.5:7.2)*(0.45+gait*.65);
       const swing=Math.sin(movePhase)*(runHeld?.50:.34)*gait;
@@ -326,12 +458,22 @@ try{
       legs[3].rotation.x=swing;
       legs[1].rotation.x=-swing;
       legs[2].rotation.x=-swing;
-      const bob=Math.abs(Math.sin(movePhase*2))*0.018*gait;
-      cat.children[0].position.y=.58+bob;
-      head.position.y=.88+bob*.6;
+
+      const kittenBounce=mix(.018,.042,youth);
+      const bob=Math.abs(Math.sin(movePhase*2))*kittenBounce*gait;
+      torso.position.y=.58+bob;
+      head.position.y=(lifeStage==='Senior'?.855:.88)+bob*.65;
+
+      // A subtle side-to-side wobble gives kittens a less perfectly controlled gait.
+      catRig.rotation.z=Math.sin(movePhase*.5)*.045*youth*gait;
+      catRig.rotation.x=Math.sin(movePhase)*.018*youth*gait;
     }else{
       for(const leg of legs)leg.rotation.x*=Math.max(0,1-9*dt);
-      head.position.y+=(0.88-head.position.y)*Math.min(1,8*dt);
+      torso.position.y+=(.58-torso.position.y)*Math.min(1,8*dt);
+      const restingHeadY=lifeStage==='Senior'?.855:.88;
+      head.position.y+=(restingHeadY-head.position.y)*Math.min(1,8*dt);
+      catRig.rotation.z*=Math.max(0,1-6*dt);
+      catRig.rotation.x*=Math.max(0,1-6*dt);
     }
 
     // Tuck legs slightly in the air.
@@ -342,24 +484,34 @@ try{
       }
     }
 
-    // Tail gives the cat a little life even when standing still.
+    // Playful kitten idle: more tail activity, tiny head/ear fidgets and curiosity.
     const t=performance.now()*.001;
-    tailRoot.rotation.y=Math.sin(t*1.7)*.20 + (moving?Math.sin(movePhase*.5)*.08:0);
+    idlePhase+=dt;
+    const youthIdle=1-ageAdultness;
+    tailRoot.rotation.y=
+      Math.sin(t*(1.7+youthIdle*.8))*(.20+youthIdle*.11)+
+      (moving?Math.sin(movePhase*.5)*.08:0);
     tailSegments.forEach((seg,i)=>{
-      seg.rotation.y=Math.sin(t*1.5-i*.32)*(.07+i*.01);
+      seg.rotation.y=Math.sin(t*(1.5+youthIdle*.4)-i*.32)*(.07+i*.01+youthIdle*.018);
       seg.rotation.x=-.03-i*.018;
     });
 
-    // Small head stabilization while running.
-    head.rotation.z=Math.sin(movePhase)*.012*gait;
+    const idleCuriosity=!moving&&onGround ? youthIdle : 0;
+    head.rotation.y=Math.sin(t*.72)*.055*idleCuriosity;
+    head.rotation.x=Math.sin(t*.91)*.025*idleCuriosity;
+    head.rotation.z=Math.sin(movePhase)*.012*gait + Math.sin(t*.63)*.012*idleCuriosity;
+    earL.rotation.z=-.05+Math.sin(t*2.3)*.025*idleCuriosity;
+    earR.rotation.z=.05-Math.sin(t*2.0+.8)*.025*idleCuriosity;
 
-    // Smoother third-person camera.
-    const target=cat.position.clone().add(new THREE.Vector3(0,.70,0));
-    const dist=3.15;
+    // Smoother cat-height camera; it lowers and moves closer for a small kitten.
+    const targetHeight=mix(.40,.70,ageAdultness);
+    const target=cat.position.clone().add(new THREE.Vector3(0,targetHeight,0));
+    const dist=mix(2.45,3.15,ageAdultness);
+    const cameraLift=mix(1.05,1.52,ageAdultness);
     const desiredCam=target.clone().add(
       new THREE.Vector3(
         Math.sin(cameraYaw)*-dist,
-        1.52,
+        cameraLift,
         Math.cos(cameraYaw)*-dist
       )
     );
@@ -368,9 +520,10 @@ try{
     camera.lookAt(target);
 
     if(!onGround)status.textContent='Test Room • Jumping';
+    else if(tired && runHeld)status.textContent='Test Room • Little legs are tired';
     else if(currentSpeed>2.5)status.textContent='Test Room • Running';
     else if(currentSpeed>.12)status.textContent='Test Room • Walking';
-    else status.textContent='Test Room • Cat ready';
+    else status.textContent='Test Room • '+lifeStage;
 
     renderer.render(scene,camera);
   }
