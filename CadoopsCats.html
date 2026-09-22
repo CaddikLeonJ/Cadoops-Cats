@@ -31,14 +31,14 @@ button{appearance:none;-webkit-appearance:none}
 .choiceRow{display:flex;flex-wrap:wrap;gap:8px}
 .choice{min-height:42px;border:2px solid #0002;border-radius:12px;background:white;color:#222;padding:8px 11px;font-weight:700;touch-action:manipulation}
 .choice.selected{border-color:#222;box-shadow:0 0 0 1px #222 inset}
-.swatch{width:44px;height:44px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 2px #0003;touch-action:manipulation}
+.swatch{width:40px;height:40px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 2px #0003;touch-action:manipulation}
 .swatch.selected{box-shadow:0 0 0 3px #222}
 #customDone{width:100%;min-height:48px;margin-top:14px;border:0;border-radius:14px;background:#222;color:#fff;font-size:16px;font-weight:900;touch-action:manipulation}
 </style>
 </head>
 <body>
 <div id="hud">
-  <div id="brand">Cadoops' Cats<div id="ver">Prototype v0.1.1</div><div id="age">Kitten • 10 weeks</div></div>
+  <div id="brand">Cadoops' Cats<div id="ver">Prototype v0.1.2</div><div id="age">Kitten • 10 weeks</div></div>
   <div id="status">Loading 3D world…</div>
   <div id="stick"><div id="knob"></div></div>
   <button class="btn" id="jump">JUMP</button>
@@ -56,24 +56,40 @@ button{appearance:none;-webkit-appearance:none}
     <div class="customGroup">
       <div class="customLabel">Coat colour</div>
       <div class="choiceRow" id="coatChoices">
-        <button class="swatch selected" data-coat="black" aria-label="Black coat" style="background:#202326"></button>
-        <button class="swatch" data-coat="grey" aria-label="Grey coat" style="background:#777d82"></button>
-        <button class="swatch" data-coat="ginger" aria-label="Ginger coat" style="background:#c97938"></button>
-        <button class="swatch" data-coat="brown" aria-label="Brown coat" style="background:#68483a"></button>
-        <button class="swatch" data-coat="cream" aria-label="Cream coat" style="background:#d9c19a"></button>
-        <button class="swatch" data-coat="white" aria-label="White coat" style="background:#eee"></button>
+        <button class="swatch selected" data-coat="black" aria-label="Black" title="Black" style="background:#202326"></button>
+        <button class="swatch" data-coat="white" aria-label="White" title="White" style="background:#eeeeea"></button>
+        <button class="swatch" data-coat="grey" aria-label="Grey" title="Grey" style="background:#777d82"></button>
+        <button class="swatch" data-coat="brown" aria-label="Brown" title="Brown" style="background:#68483a"></button>
+        <button class="swatch" data-coat="cream" aria-label="Cream" title="Cream" style="background:#d9c19a"></button>
+        <button class="swatch" data-coat="ginger" aria-label="Ginger" title="Ginger" style="background:#c97938"></button>
+        <button class="swatch" data-coat="red" aria-label="Red" title="Red" style="background:#c73f3f"></button>
+        <button class="swatch" data-coat="orange" aria-label="Orange" title="Orange" style="background:#e88a2d"></button>
+        <button class="swatch" data-coat="yellow" aria-label="Yellow" title="Yellow" style="background:#e4c83c"></button>
+        <button class="swatch" data-coat="green" aria-label="Green" title="Green" style="background:#49a75d"></button>
+        <button class="swatch" data-coat="blue" aria-label="Blue" title="Blue" style="background:#4d79c9"></button>
+        <button class="swatch" data-coat="cyan" aria-label="Cyan" title="Cyan" style="background:#48b9c7"></button>
+        <button class="swatch" data-coat="purple" aria-label="Purple" title="Purple" style="background:#8356ba"></button>
+        <button class="swatch" data-coat="pink" aria-label="Pink" title="Pink" style="background:#df75a8"></button>
       </div>
     </div>
 
     <div class="customGroup">
       <div class="customLabel">Secondary / marking colour</div>
       <div class="choiceRow" id="secondaryChoices">
-        <button class="swatch selected" data-secondary="white" aria-label="White markings" style="background:#f2f0e9"></button>
-        <button class="swatch" data-secondary="cream" aria-label="Cream markings" style="background:#d9c19a"></button>
-        <button class="swatch" data-secondary="grey" aria-label="Grey markings" style="background:#777d82"></button>
-        <button class="swatch" data-secondary="black" aria-label="Black markings" style="background:#202326"></button>
-        <button class="swatch" data-secondary="ginger" aria-label="Ginger markings" style="background:#c97938"></button>
-        <button class="swatch" data-secondary="brown" aria-label="Brown markings" style="background:#68483a"></button>
+        <button class="swatch selected" data-secondary="white" aria-label="White markings" title="White" style="background:#f2f0e9"></button>
+        <button class="swatch" data-secondary="black" aria-label="Black markings" title="Black" style="background:#202326"></button>
+        <button class="swatch" data-secondary="grey" aria-label="Grey markings" title="Grey" style="background:#777d82"></button>
+        <button class="swatch" data-secondary="brown" aria-label="Brown markings" title="Brown" style="background:#68483a"></button>
+        <button class="swatch" data-secondary="cream" aria-label="Cream markings" title="Cream" style="background:#d9c19a"></button>
+        <button class="swatch" data-secondary="ginger" aria-label="Ginger markings" title="Ginger" style="background:#c97938"></button>
+        <button class="swatch" data-secondary="red" aria-label="Red markings" title="Red" style="background:#c73f3f"></button>
+        <button class="swatch" data-secondary="orange" aria-label="Orange markings" title="Orange" style="background:#e88a2d"></button>
+        <button class="swatch" data-secondary="yellow" aria-label="Yellow markings" title="Yellow" style="background:#e4c83c"></button>
+        <button class="swatch" data-secondary="green" aria-label="Green markings" title="Green" style="background:#49a75d"></button>
+        <button class="swatch" data-secondary="blue" aria-label="Blue markings" title="Blue" style="background:#4d79c9"></button>
+        <button class="swatch" data-secondary="cyan" aria-label="Cyan markings" title="Cyan" style="background:#48b9c7"></button>
+        <button class="swatch" data-secondary="purple" aria-label="Purple markings" title="Purple" style="background:#8356ba"></button>
+        <button class="swatch" data-secondary="pink" aria-label="Pink markings" title="Pink" style="background:#df75a8"></button>
       </div>
     </div>
 
@@ -82,10 +98,14 @@ button{appearance:none;-webkit-appearance:none}
       <div class="choiceRow" id="patternChoices">
         <button class="choice" data-pattern="solid">Solid</button>
         <button class="choice selected" data-pattern="tuxedo">Tuxedo</button>
-        <button class="choice" data-pattern="socks">White Socks</button>
-        <button class="choice" data-pattern="chest">White Chest</button>
+        <button class="choice" data-pattern="mitted">Mitted</button>
         <button class="choice" data-pattern="bicolour">Bicolour</button>
-        <button class="choice" data-pattern="tabby">Tabby</button>
+        <button class="choice" data-pattern="van">Van-style</button>
+        <button class="choice" data-pattern="mackerel">Mackerel Tabby</button>
+        <button class="choice" data-pattern="classic">Classic Tabby</button>
+        <button class="choice" data-pattern="point">Colourpoint</button>
+        <button class="choice" data-pattern="tortie">Tortoiseshell</button>
+        <button class="choice" data-pattern="calico">Calico</button>
       </div>
     </div>
 
@@ -343,53 +363,123 @@ try{
   }
   tailRoot.rotation.x=1.02;
 
-  // Tabby overlays.
-  const tabbyMarks=[];
-  for(const z of [-.34,-.10,.15]){
-    const ring=mesh(
-      catRig,
-      new THREE.TorusGeometry(.31,.026,8,28),
-      stripeMat,
-      [0,.54,z],
-      [.92,.76,1],
-      [0,0,0]
-    );
-    ring.visible=false;
-    tabbyMarks.push(ring);
+  // --- Coat-pattern overlay geometry ---
+  // These sit just above the body surface so the patterns read as markings,
+  // rather than simply recolouring whole body parts.
+  const patternMeshes=[];
+  function patternSphere(parent,pos,scale){
+    const m=mesh(parent,new THREE.SphereGeometry(.13,14,10),markingMat,pos,scale);
+    m.visible=false;
+    patternMeshes.push(m);
+    return m;
   }
-  for(let i=0;i<3;i++){
-    const mark=mesh(
-      head,
-      new THREE.BoxGeometry(.032,.16,.018),
-      stripeMat,
-      [(i-1)*.07,.13,.275],
-      [1,1,1],
-      [0,0,(i-1)*.12]
-    );
-    mark.visible=false;
-    tabbyMarks.push(mark);
+  function patternStrip(parent,pos,scale,rot=[0,0,0]){
+    const m=mesh(parent,new THREE.BoxGeometry(.035,.22,.13),markingMat,pos,scale,rot);
+    m.visible=false;
+    patternMeshes.push(m);
+    return m;
   }
-  const tailBands=[];
-  tailMeshes.forEach((tm,i)=>{
-    if(i%2===1){
-      const band=tm.clone();
-      band.material=stripeMat;
-      band.scale.set(1.07,.48,1.07);
-      band.position.y=.065;
-      band.visible=false;
-      tm.parent.add(band);
-      tailBands.push(band);
-    }
+
+  // Side patches used by bicolour/tortie/calico.
+  const sidePatches=[
+    patternSphere(catRig,[ .285,.55,.06],[.28,.72,1.20]),
+    patternSphere(catRig,[-.285,.56,-.18],[.30,.70,1.05]),
+    patternSphere(catRig,[ .265,.57,-.39],[.26,.75,.90]),
+    patternSphere(head,[ .205,.02,.18],[.42,.72,.62]),
+    patternSphere(head,[-.19,.10,.15],[.34,.55,.55])
+  ];
+
+  // Van-style: colour concentrated on crown and tail while most of the coat is secondary.
+  const vanPatches=[
+    patternSphere(head,[-.13,.15,.12],[.52,.62,.55]),
+    patternSphere(head,[ .15,.17,.10],[.48,.58,.52])
+  ];
+
+  // Mackerel tabby: narrow vertical/diagonal stripes on both flanks.
+  const mackerelMarks=[];
+  for(const side of [-1,1]){
+    [-.27,-.10,.08,.24].forEach((z,i)=>{
+      const s=patternStrip(
+        catRig,
+        [side*.292,.56,z],
+        [1.0,1.05-(i*.08),.75],
+        [0,0,side*(.10+(i%2)*.06)]
+      );
+      mackerelMarks.push(s);
+    });
+  }
+  [-.07,0,.07].forEach((x,i)=>{
+    const s=patternStrip(head,[x,.13,.265],[.65,.55,.38],[0,0,(i-1)*.10]);
+    mackerelMarks.push(s);
   });
+
+  // Classic tabby: broad curved side swirls plus forehead lines.
+  const classicMarks=[];
+  for(const side of [-1,1]){
+    const swirl=new THREE.Mesh(
+      new THREE.TorusGeometry(.16,.025,8,28,Math.PI*1.55),
+      markingMat
+    );
+    swirl.position.set(side*.302,.55,-.10);
+    swirl.rotation.set(0,Math.PI/2,side*.35);
+    swirl.scale.set(1.0,1.25,1.0);
+    swirl.castShadow=true;
+    swirl.visible=false;
+    catRig.add(swirl);
+    patternMeshes.push(swirl);
+    classicMarks.push(swirl);
+
+    const shoulderStripe=patternStrip(catRig,[side*.285,.57,.27],[1,.90,.85],[0,0,side*.18]);
+    classicMarks.push(shoulderStripe);
+  }
+  [-.07,0,.07].forEach((x,i)=>{
+    const s=patternStrip(head,[x,.13,.265],[.70,.58,.40],[0,0,(i-1)*.12]);
+    classicMarks.push(s);
+  });
+
+  // Irregular patches for tortoiseshell/calico.
+  const tortiePatches=[
+    patternSphere(catRig,[ .27,.58,.24],[.30,.52,.72]),
+    patternSphere(catRig,[-.28,.52,.02],[.28,.60,.92]),
+    patternSphere(catRig,[ .27,.55,-.28],[.27,.56,.78]),
+    patternSphere(catRig,[-.25,.58,-.43],[.24,.50,.68]),
+    patternSphere(head,[ .18,.02,.19],[.34,.62,.54]),
+    patternSphere(head,[-.16,.13,.14],[.30,.45,.48])
+  ];
+
+  // Fixed white for calico, with primary + chosen secondary patches over it.
+  const calicoWhiteMat=new THREE.MeshStandardMaterial({color:0xf3f1eb,roughness:.96});
+  const calicoWhite=[
+    mesh(catRig,new THREE.SphereGeometry(.15,14,10),calicoWhiteMat,[-.29,.53,.24],[.28,.60,.80]),
+    mesh(catRig,new THREE.SphereGeometry(.15,14,10),calicoWhiteMat,[ .28,.56,-.09],[.26,.55,.76]),
+    mesh(head,new THREE.SphereGeometry(.10,14,10),calicoWhiteMat,[-.03,-.02,.245],[.55,.75,.45])
+  ];
+  calicoWhite.forEach(m=>m.visible=false);
+
+  // Small primary-colour crown patches used when the Van-style body becomes secondary.
+  const vanPrimaryMat=new THREE.MeshStandardMaterial({color:0x202326,roughness:.9});
+  const vanPrimaryPatches=[
+    mesh(head,new THREE.SphereGeometry(.13,14,10),vanPrimaryMat,[-.13,.14,.11],[.55,.66,.58]),
+    mesh(head,new THREE.SphereGeometry(.13,14,10),vanPrimaryMat,[ .14,.15,.10],[.52,.62,.56])
+  ];
+  vanPrimaryPatches.forEach(m=>m.visible=false);
 
   // --- Cat appearance customisation ---
   const coatColours={
     black:0x202326,
+    white:0xeeeeea,
     grey:0x777d82,
-    ginger:0xc97938,
     brown:0x68483a,
     cream:0xd9c19a,
-    white:0xeeeeea
+    ginger:0xc97938,
+    red:0xc73f3f,
+    orange:0xe88a2d,
+    yellow:0xe4c83c,
+    green:0x49a75d,
+    blue:0x4d79c9,
+    cyan:0x48b9c7,
+    purple:0x8356ba,
+    pink:0xdf75a8
   };
   const eyeColours={
     green:0x9fbf62,
@@ -423,23 +513,108 @@ try{
     coatMat.color.setHex(base);
     markingMat.color.setHex(secondary);
     stripeMat.color.setHex(secondary);
+    vanPrimaryMat.color.setHex(base);
     eyeMat.color.setHex(eyeColours[catAppearance.eyes]);
     noseMat.color.setHex(noseColours[catAppearance.nose]);
 
+    // Reset every optional pattern layer/material.
+    patternMeshes.forEach(m=>m.visible=false);
+    calicoWhite.forEach(m=>m.visible=false);
+    vanPrimaryPatches.forEach(m=>m.visible=false);
+    blaze.visible=false;
+
+    // Reset the main anatomy to primary coat.
+    [torso,shoulders,haunches,neck,headMesh,cheekL,cheekR,earL,earR].forEach(m=>m.material=coatMat);
+    legs.forEach(leg=>{
+      leg.userData.upper.material=coatMat;
+      leg.userData.lower.material=coatMat;
+    });
+    tailMeshes.forEach(m=>m.material=coatMat);
+    muzzleL.material=coatMat;
+    muzzleR.material=coatMat;
+    chest.material=coatMat;
+    pawMeshes.forEach(p=>p.material=coatMat);
+
     const pattern=catAppearance.pattern;
-    const muzzleWhite=pattern==='tuxedo'||pattern==='bicolour';
-    const chestWhite=pattern==='tuxedo'||pattern==='chest'||pattern==='bicolour';
-    const pawsWhite=pattern==='tuxedo'||pattern==='socks'||pattern==='bicolour';
 
-    muzzleL.material=muzzleWhite?markingMat:coatMat;
-    muzzleR.material=muzzleWhite?markingMat:coatMat;
-    chest.material=chestWhite?markingMat:coatMat;
-    pawMeshes.forEach(p=>p.material=pawsWhite?markingMat:coatMat);
+    if(pattern==='tuxedo'){
+      muzzleL.material=markingMat;
+      muzzleR.material=markingMat;
+      chest.material=markingMat;
+      pawMeshes.forEach(p=>p.material=markingMat);
+      blaze.visible=true;
+    }
 
-    blaze.visible=pattern==='bicolour';
-    const tabby=pattern==='tabby';
-    tabbyMarks.forEach(m=>m.visible=tabby);
-    tailBands.forEach(m=>m.visible=tabby);
+    if(pattern==='mitted'){
+      chest.material=markingMat;
+      pawMeshes.forEach(p=>p.material=markingMat);
+      muzzleL.material=markingMat;
+      muzzleR.material=markingMat;
+    }
+
+    if(pattern==='bicolour'){
+      muzzleL.material=markingMat;
+      muzzleR.material=markingMat;
+      chest.material=markingMat;
+      pawMeshes.forEach(p=>p.material=markingMat);
+      blaze.visible=true;
+      sidePatches.forEach(m=>m.visible=true);
+    }
+
+    if(pattern==='van'){
+      // Mostly secondary/white-like body with primary colour on crown and tail.
+      [torso,shoulders,haunches,neck,headMesh,cheekL,cheekR].forEach(m=>m.material=markingMat);
+      legs.forEach(leg=>{
+        leg.userData.upper.material=markingMat;
+        leg.userData.lower.material=markingMat;
+      });
+      pawMeshes.forEach(p=>p.material=markingMat);
+      chest.material=markingMat;
+      muzzleL.material=markingMat;
+      muzzleR.material=markingMat;
+      earL.material=coatMat;
+      earR.material=coatMat;
+      tailMeshes.forEach(m=>m.material=coatMat);
+      vanPrimaryPatches.forEach(m=>m.visible=true);
+    }
+
+    if(pattern==='mackerel'){
+      mackerelMarks.forEach(m=>m.visible=true);
+      tailMeshes.forEach((m,i)=>{ if(i%2===1) m.material=markingMat; });
+    }
+
+    if(pattern==='classic'){
+      classicMarks.forEach(m=>m.visible=true);
+      tailMeshes.forEach((m,i)=>{ if(i===2||i===5) m.material=markingMat; });
+    }
+
+    if(pattern==='point'){
+      // Siamese-style placement: darker/secondary extremities.
+      earL.material=markingMat;
+      earR.material=markingMat;
+      cheekL.material=markingMat;
+      cheekR.material=markingMat;
+      muzzleL.material=markingMat;
+      muzzleR.material=markingMat;
+      pawMeshes.forEach(p=>p.material=markingMat);
+      tailMeshes.forEach(m=>m.material=markingMat);
+      blaze.visible=false;
+    }
+
+    if(pattern==='tortie'){
+      tortiePatches.forEach(m=>m.visible=true);
+    }
+
+    if(pattern==='calico'){
+      // White remains part of the traditional three-colour calico layout.
+      calicoWhite.forEach(m=>m.visible=true);
+      sidePatches.forEach((m,i)=>{m.visible=i%2===0});
+      tortiePatches.forEach((m,i)=>{m.visible=i%2===1});
+      chest.material=calicoWhiteMat;
+      muzzleL.material=calicoWhiteMat;
+      muzzleR.material=calicoWhiteMat;
+      pawMeshes.forEach(p=>p.material=calicoWhiteMat);
+    }
   }
   applyAppearance();
 
@@ -653,52 +828,109 @@ try{
   runBtn.addEventListener('pointerdown',e=>{e.preventDefault();if(!customOpen)runHeld=true});
   ['pointerup','pointercancel','pointerleave'].forEach(x=>runBtn.addEventListener(x,()=>runHeld=false));
 
-  let audioCtx=null;
-  function playMeow(){
-    if(customOpen)return;
+  // Build a tiny PCM WAV in memory once. The MEOW button then plays it as a
+  // normal audio file, which is much more reliable in iOS/Scriptable than the old synth.
+  function makeMeowWavURL(){
+    const sampleRate=22050;
+    const duration=.82;
+    const count=Math.floor(sampleRate*duration);
+    const buffer=new ArrayBuffer(44+count*2);
+    const view=new DataView(buffer);
+
+    function str(off,s){for(let i=0;i<s.length;i++)view.setUint8(off+i,s.charCodeAt(i))}
+    str(0,'RIFF');
+    view.setUint32(4,36+count*2,true);
+    str(8,'WAVE');
+    str(12,'fmt ');
+    view.setUint32(16,16,true);
+    view.setUint16(20,1,true);
+    view.setUint16(22,1,true);
+    view.setUint32(24,sampleRate,true);
+    view.setUint32(28,sampleRate*2,true);
+    view.setUint16(32,2,true);
+    view.setUint16(34,16,true);
+    str(36,'data');
+    view.setUint32(40,count*2,true);
+
+    let phase=0;
+    let seed=2463534242;
+    function noise(){
+      seed^=seed<<13; seed^=seed>>>17; seed^=seed<<5;
+      return ((seed>>>0)/4294967295)*2-1;
+    }
+
+    for(let i=0;i<count;i++){
+      const t=i/sampleRate;
+      let f;
+      if(t<.16) f=470+(740-470)*(t/.16);
+      else if(t<.40) f=740+42*Math.sin((t-.16)/.24*Math.PI);
+      else f=740-(740-395)*((t-.40)/(duration-.40));
+
+      // Gentle cat-like vibrato.
+      f*=1+.018*Math.sin(Math.PI*2*6.2*t);
+      phase+=Math.PI*2*f/sampleRate;
+
+      let s=
+        Math.sin(phase) +
+        .42*Math.sin(phase*2+.18*Math.sin(Math.PI*2*3.2*t)) +
+        .22*Math.sin(phase*3) +
+        .11*Math.sin(phase*4) +
+        .07*Math.sin(phase*5);
+
+      // Small breathy attack.
+      s+=noise()*.025*(1-Math.min(1,t/.22));
+
+      const attack=Math.min(1,t/.035);
+      const release=Math.min(1,(duration-t)/.22);
+      const env=Math.sin(Math.min(1,attack)*Math.PI/2)*
+                Math.sin(Math.min(1,release)*Math.PI/2)*
+                (.72+.28*Math.sin(Math.PI*t/duration));
+
+      s=Math.tanh(s*.8)*env*.82;
+      view.setInt16(44+i*2,Math.max(-32767,Math.min(32767,Math.round(s*32767))),true);
+    }
+
+    return URL.createObjectURL(new Blob([buffer],{type:'audio/wav'}));
+  }
+
+  const meowURL=makeMeowWavURL();
+  const meowAudioElement=new Audio(meowURL);
+  meowAudioElement.preload='auto';
+  meowAudioElement.volume=1;
+
+  let fallbackAudioCtx=null;
+  function fallbackMeow(){
     const AC=window.AudioContext||window.webkitAudioContext;
     if(!AC)return;
-    if(!audioCtx)audioCtx=new AC();
-    if(audioCtx.state==='suspended')audioCtx.resume();
+    if(!fallbackAudioCtx)fallbackAudioCtx=new AC();
+    if(fallbackAudioCtx.state==='suspended')fallbackAudioCtx.resume();
+    const now=fallbackAudioCtx.currentTime;
+    const osc=fallbackAudioCtx.createOscillator();
+    const gain=fallbackAudioCtx.createGain();
+    osc.type='sawtooth';
+    osc.frequency.setValueAtTime(520,now);
+    osc.frequency.exponentialRampToValueAtTime(760,now+.13);
+    osc.frequency.exponentialRampToValueAtTime(410,now+.55);
+    gain.gain.setValueAtTime(.0001,now);
+    gain.gain.exponentialRampToValueAtTime(.32,now+.025);
+    gain.gain.exponentialRampToValueAtTime(.0001,now+.60);
+    osc.connect(gain);
+    gain.connect(fallbackAudioCtx.destination);
+    osc.start(now);
+    osc.stop(now+.62);
+  }
 
-    const now=audioCtx.currentTime;
-    const out=audioCtx.createGain();
-    const formant=audioCtx.createBiquadFilter();
-    const osc1=audioCtx.createOscillator();
-    const osc2=audioCtx.createOscillator();
-
-    formant.type='bandpass';
-    formant.frequency.setValueAtTime(1150,now);
-    formant.Q.setValueAtTime(2.2,now);
-
-    osc1.type='sawtooth';
-    osc2.type='triangle';
-
-    const kitten=1-ageAdultness;
-    const base=420+kitten*170;
-    osc1.frequency.setValueAtTime(base,now);
-    osc1.frequency.exponentialRampToValueAtTime(base*1.52,now+.12);
-    osc1.frequency.exponentialRampToValueAtTime(base*.82,now+.43);
-
-    osc2.frequency.setValueAtTime(base*2.02,now);
-    osc2.frequency.exponentialRampToValueAtTime(base*2.35,now+.13);
-    osc2.frequency.exponentialRampToValueAtTime(base*1.45,now+.43);
-
-    out.gain.setValueAtTime(.0001,now);
-    out.gain.exponentialRampToValueAtTime(.12,now+.025);
-    out.gain.setValueAtTime(.12,now+.13);
-    out.gain.exponentialRampToValueAtTime(.0001,now+.46);
-
-    osc1.connect(formant);
-    osc2.connect(formant);
-    formant.connect(out);
-    out.connect(audioCtx.destination);
-
-    osc1.start(now);
-    osc2.start(now);
-    osc1.stop(now+.48);
-    osc2.stop(now+.48);
-    meowMouthUntil=performance.now()+430;
+  async function playMeow(){
+    if(customOpen)return;
+    meowMouthUntil=performance.now()+700;
+    try{
+      meowAudioElement.pause();
+      meowAudioElement.currentTime=0;
+      meowAudioElement.volume=1;
+      await meowAudioElement.play();
+    }catch(err){
+      fallbackMeow();
+    }
   }
 
   const meowBtn=document.getElementById('meow');
