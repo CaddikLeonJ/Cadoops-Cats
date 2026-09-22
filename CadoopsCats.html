@@ -7,7 +7,7 @@
 <style>
 html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#87b8d8;font-family:-apple-system,BlinkMacSystemFont,sans-serif;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none} body{position:fixed;inset:0}
 canvas{display:block;position:absolute;left:0;top:0;width:100%!important;height:100%!important}
-button,#hud,#stick,#knob,#hint,#brand,#ver,#status{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;touch-action:none}
+button,#hud,#stick,#knob,#hint,#brand,#ver,#status,#customiseBtn,#customPanel,#customCard{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
 button{appearance:none;-webkit-appearance:none}
 #hud{position:fixed;inset:0;pointer-events:none;color:white;text-shadow:0 2px 4px #0008}
 #brand{position:absolute;top:max(14px,env(safe-area-inset-top));left:16px;font-weight:800;font-size:20px}
@@ -19,16 +19,83 @@ button{appearance:none;-webkit-appearance:none}
 #jump{right:24px;bottom:max(32px,env(safe-area-inset-bottom));width:78px;height:78px}
 #run{right:116px;bottom:max(42px,env(safe-area-inset-bottom));width:62px;height:62px}
 #hint{position:absolute;bottom:max(122px,calc(env(safe-area-inset-bottom) + 122px));right:20px;font-size:12px;opacity:.85}
+#customiseBtn{pointer-events:auto;position:absolute;left:16px;top:max(82px,calc(env(safe-area-inset-top) + 68px));border:0;border-radius:14px;padding:10px 14px;background:#ffffffd9;color:#222;font-weight:800;font-size:12px;box-shadow:0 3px 10px #0004;touch-action:manipulation}
+#customPanel{display:none;position:fixed;inset:0;z-index:20;background:#0008;pointer-events:auto;align-items:center;justify-content:center;padding:max(14px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left))}
+#customPanel.open{display:flex}
+#customCard{width:min(430px,92vw);max-height:84%;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;background:#f7f3ea;color:#242424;text-shadow:none;border-radius:20px;padding:16px 16px 18px;box-sizing:border-box;box-shadow:0 12px 40px #0008}
+#customCard h2{margin:0 0 4px;font-size:22px}
+#customCard .sub{margin:0 0 14px;font-size:12px;opacity:.68}
+.customGroup{margin:13px 0}
+.customLabel{font-size:13px;font-weight:800;margin-bottom:8px}
+.choiceRow{display:flex;flex-wrap:wrap;gap:8px}
+.choice{min-height:42px;border:2px solid #0002;border-radius:12px;background:white;color:#222;padding:8px 11px;font-weight:700;touch-action:manipulation}
+.choice.selected{border-color:#222;box-shadow:0 0 0 1px #222 inset}
+.swatch{width:44px;height:44px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 2px #0003;touch-action:manipulation}
+.swatch.selected{box-shadow:0 0 0 3px #222}
+#customDone{width:100%;min-height:48px;margin-top:14px;border:0;border-radius:14px;background:#222;color:#fff;font-size:16px;font-weight:900;touch-action:manipulation}
 </style>
 </head>
 <body>
 <div id="hud">
-  <div id="brand">Cadoops' Cats<div id="ver">Prototype v0.0.9</div><div id="age">Kitten • 10 weeks</div></div>
+  <div id="brand">Cadoops' Cats<div id="ver">Prototype v0.1.0</div><div id="age">Kitten • 10 weeks</div></div>
   <div id="status">Loading 3D world…</div>
   <div id="stick"><div id="knob"></div></div>
   <button class="btn" id="jump">JUMP</button>
   <button class="btn" id="run">RUN</button>
+  <button id="customiseBtn">CUSTOMISE</button>
   <div id="hint">Drag anywhere else to turn camera</div>
+</div>
+
+<div id="customPanel">
+  <div id="customCard">
+    <h2>Customise Cat</h2>
+    <p class="sub">Changes update on your kitten instantly.</p>
+
+    <div class="customGroup">
+      <div class="customLabel">Coat colour</div>
+      <div class="choiceRow" id="coatChoices">
+        <button class="swatch selected" data-coat="black" aria-label="Black coat" style="background:#202326"></button>
+        <button class="swatch" data-coat="grey" aria-label="Grey coat" style="background:#777d82"></button>
+        <button class="swatch" data-coat="ginger" aria-label="Ginger coat" style="background:#c97938"></button>
+        <button class="swatch" data-coat="brown" aria-label="Brown coat" style="background:#68483a"></button>
+        <button class="swatch" data-coat="cream" aria-label="Cream coat" style="background:#d9c19a"></button>
+        <button class="swatch" data-coat="white" aria-label="White coat" style="background:#eee"></button>
+      </div>
+    </div>
+
+    <div class="customGroup">
+      <div class="customLabel">Coat style</div>
+      <div class="choiceRow" id="patternChoices">
+        <button class="choice" data-pattern="solid">Solid</button>
+        <button class="choice selected" data-pattern="tuxedo">Tuxedo</button>
+        <button class="choice" data-pattern="socks">White Socks</button>
+        <button class="choice" data-pattern="chest">White Chest</button>
+        <button class="choice" data-pattern="bicolour">Bicolour</button>
+        <button class="choice" data-pattern="tabby">Tabby</button>
+      </div>
+    </div>
+
+    <div class="customGroup">
+      <div class="customLabel">Eye colour</div>
+      <div class="choiceRow" id="eyeChoices">
+        <button class="swatch selected" data-eye="green" aria-label="Green eyes" style="background:#9fbf62"></button>
+        <button class="swatch" data-eye="blue" aria-label="Blue eyes" style="background:#6faed9"></button>
+        <button class="swatch" data-eye="amber" aria-label="Amber eyes" style="background:#d69a37"></button>
+        <button class="swatch" data-eye="hazel" aria-label="Hazel eyes" style="background:#9a8748"></button>
+      </div>
+    </div>
+
+    <div class="customGroup">
+      <div class="customLabel">Nose colour</div>
+      <div class="choiceRow" id="noseChoices">
+        <button class="swatch selected" data-nose="pink" aria-label="Pink nose" style="background:#d68d89"></button>
+        <button class="swatch" data-nose="black" aria-label="Black nose" style="background:#252525"></button>
+        <button class="swatch" data-nose="brown" aria-label="Brown nose" style="background:#6c4637"></button>
+      </div>
+    </div>
+
+    <button id="customDone">DONE</button>
+  </div>
 </div>
 
 <script type="module">
@@ -109,17 +176,18 @@ try{
   cat.position.set(0,0,2);
   scene.add(cat);
 
-  // The visible model lives under a separate rig so age can change proportions
-  // without affecting world position, physics or facing.
   const catRig=new THREE.Group();
   cat.add(catRig);
 
-  const black=new THREE.MeshStandardMaterial({color:0x202326,roughness:.9});
-  const white=new THREE.MeshStandardMaterial({color:0xf1efe8,roughness:.96});
-  const pink=new THREE.MeshStandardMaterial({color:0xd68d89,roughness:.8});
-  const innerEar=new THREE.MeshStandardMaterial({color:0xb86f73,roughness:.85});
-  const eyeMat=new THREE.MeshStandardMaterial({color:0x9fbf62,roughness:.32,metalness:.03});
-  const pupilMat=new THREE.MeshStandardMaterial({color:0x060606,roughness:.42});
+  // Customisable materials.
+  const coatMat=new THREE.MeshStandardMaterial({color:0x202326,roughness:.9});
+  const whiteMat=new THREE.MeshStandardMaterial({color:0xf2f0e9,roughness:.96});
+  const noseMat=new THREE.MeshStandardMaterial({color:0xd68d89,roughness:.8});
+  const innerEarMat=new THREE.MeshStandardMaterial({color:0xb86f73,roughness:.88});
+  const eyeMat=new THREE.MeshStandardMaterial({color:0x9fbf62,roughness:.3,metalness:.03});
+  const pupilMat=new THREE.MeshStandardMaterial({color:0x050505,roughness:.4});
+  const stripeMat=new THREE.MeshStandardMaterial({color:0x111315,roughness:.92});
+  const whiskerMat=new THREE.MeshStandardMaterial({color:0xe8e5dc,roughness:.8});
 
   function mesh(parent,geometry,material,pos,scale=[1,1,1],rot=[0,0,0]){
     const m=new THREE.Mesh(geometry,material);
@@ -132,74 +200,235 @@ try{
     return m;
   }
 
-  // Body references are kept so they can gradually change with age.
-  const torso=mesh(catRig,new THREE.SphereGeometry(.5,22,16),black,[0,.58,-.05],[.70,.66,1.22]);
-  const shoulders=mesh(catRig,new THREE.SphereGeometry(.36,20,15),black,[0,.67,.44],[.86,.88,.92]);
-  const chest=mesh(catRig,new THREE.SphereGeometry(.25,18,13),white,[0,.55,.48],[.72,1.08,.40]);
+  // Lower, longer feline body: shoulders, ribcage and rear haunches overlap
+  // to make one continuous cat silhouette rather than a round blob.
+  const torso=mesh(catRig,new THREE.SphereGeometry(.5,24,18),coatMat,[0,.53,-.08],[.58,.50,1.16]);
+  const shoulders=mesh(catRig,new THREE.SphereGeometry(.34,22,16),coatMat,[0,.56,.40],[.82,.82,.88]);
+  const haunches=mesh(catRig,new THREE.SphereGeometry(.38,22,16),coatMat,[0,.56,-.47],[.88,.90,1.02]);
+  const neck=mesh(catRig,new THREE.SphereGeometry(.23,18,14),coatMat,[0,.68,.54],[.82,1.0,.76]);
+
+  // Marking meshes can be switched between coat and white at runtime.
+  const chest=mesh(catRig,new THREE.SphereGeometry(.22,18,13),whiteMat,[0,.49,.47],[.65,1.10,.34]);
 
   const head=new THREE.Group();
-  head.position.set(0,.88,.68);
+  head.position.set(0,.79,.72);
   catRig.add(head);
-  const headMesh=mesh(head,new THREE.SphereGeometry(.34,22,17),black,[0,0,0],[1,.94,.95]);
+  const headMesh=mesh(head,new THREE.SphereGeometry(.31,24,18),coatMat,[0,0,0],[1,.90,.84]);
 
-  const muzzleL=mesh(head,new THREE.SphereGeometry(.14,16,12),white,[-.095,-.085,.285],[.94,.76,.62]);
-  const muzzleR=mesh(head,new THREE.SphereGeometry(.14,16,12),white,[ .095,-.085,.285],[.94,.76,.62]);
-  const nose=mesh(head,new THREE.SphereGeometry(.062,14,10),pink,[0,-.045,.382],[1.05,.68,.82]);
+  // Slight cheek width and compact muzzle make the face read as feline.
+  const cheekL=mesh(head,new THREE.SphereGeometry(.13,16,12),coatMat,[-.13,-.055,.20],[1.1,.75,.62]);
+  const cheekR=mesh(head,new THREE.SphereGeometry(.13,16,12),coatMat,[ .13,-.055,.20],[1.1,.75,.62]);
+  const muzzleL=mesh(head,new THREE.SphereGeometry(.115,16,12),whiteMat,[-.075,-.105,.255],[.90,.66,.58]);
+  const muzzleR=mesh(head,new THREE.SphereGeometry(.115,16,12),whiteMat,[ .075,-.105,.255],[.90,.66,.58]);
+  const nose=mesh(head,new THREE.SphereGeometry(.052,14,10),noseMat,[0,-.075,.338],[1.10,.62,.72]);
 
-  const earL=mesh(head,new THREE.ConeGeometry(.155,.32,3),black,[-.205,.275,.015],[1,1,.70],[0,0,-.05]);
-  const earR=mesh(head,new THREE.ConeGeometry(.155,.32,3),black,[ .205,.275,.015],[1,1,.70],[0,0,.05]);
-  mesh(head,new THREE.ConeGeometry(.09,.205,3),innerEar,[-.205,.277,.040],[1,1,.52],[0,0,-.05]);
-  mesh(head,new THREE.ConeGeometry(.09,.205,3),innerEar,[ .205,.277,.040],[1,1,.52],[0,0,.05]);
+  const earL=mesh(head,new THREE.ConeGeometry(.14,.31,3),coatMat,[-.19,.255,-.005],[.92,1,.72],[0,0,-.08]);
+  const earR=mesh(head,new THREE.ConeGeometry(.14,.31,3),coatMat,[ .19,.255,-.005],[.92,1,.72],[0,0,.08]);
+  mesh(head,new THREE.ConeGeometry(.082,.205,3),innerEarMat,[-.19,.257,.018],[.88,1,.52],[0,0,-.08]);
+  mesh(head,new THREE.ConeGeometry(.082,.205,3),innerEarMat,[ .19,.257,.018],[.88,1,.52],[0,0,.08]);
 
   const eyes=[];
   function addEye(x){
     const eye=new THREE.Group();
-    eye.position.set(x,.055,.298);
+    eye.position.set(x,.035,.255);
     head.add(eye);
-    mesh(eye,new THREE.SphereGeometry(.072,15,11),eyeMat,[0,0,0],[1,.88,.38]);
-    mesh(eye,new THREE.SphereGeometry(.034,12,9),pupilMat,[0,0,.030],[.42,1,.30]);
+    mesh(eye,new THREE.SphereGeometry(.067,16,12),eyeMat,[0,0,0],[1.08,.78,.34]);
+    mesh(eye,new THREE.SphereGeometry(.030,12,9),pupilMat,[0,0,.025],[.34,1.12,.28]);
     eyes.push(eye);
   }
-  addEye(-.13);
-  addEye(.13);
+  addEye(-.115);
+  addEye(.115);
 
+  // Small white blaze used by the bicolour preset.
+  const blaze=mesh(head,new THREE.SphereGeometry(.09,14,10),whiteMat,[0,.055,.272],[.52,1.55,.30]);
+  blaze.visible=false;
+
+  // Whiskers.
+  const whiskers=[];
+  for(const side of [-1,1]){
+    for(let i=0;i<3;i++){
+      const w=mesh(
+        head,
+        new THREE.CylinderGeometry(.004,.004,.29,6),
+        whiskerMat,
+        [side*.19,-.07-i*.025,.29],
+        [1,1,1],
+        [0,0,Math.PI/2 + side*(i-1)*.10]
+      );
+      w.castShadow=false;
+      whiskers.push(w);
+    }
+  }
+
+  // Two-piece legs: slim lower legs and broader upper joints look much more cat-like.
   const legs=[];
+  const pawMeshes=[];
   function makeLeg(x,z,isFront){
     const leg=new THREE.Group();
-    leg.position.set(x,.44,z);
+    leg.position.set(x,.43,z);
     catRig.add(leg);
-    mesh(leg,new THREE.CylinderGeometry(.078,.09,.36,10),black,[0,-.16,0],[1,1,1]);
-    mesh(leg,new THREE.SphereGeometry(.102,12,9),white,[0,-.355,.045],[1.02,.58,1.34]);
-    leg.userData.isFront=isFront;
+
+    const upper=mesh(
+      leg,
+      new THREE.CylinderGeometry(.075,.090,.20,10),
+      coatMat,
+      [0,-.08,isFront?.015:-.015],
+      [1,1,1],
+      [isFront?.10:-.12,0,0]
+    );
+    const lower=mesh(
+      leg,
+      new THREE.CylinderGeometry(.052,.065,.24,10),
+      coatMat,
+      [0,-.275,isFront?.025:-.025],
+      [1,1,1],
+      [isFront?-.08:.08,0,0]
+    );
+    const paw=mesh(
+      leg,
+      new THREE.SphereGeometry(.082,12,9),
+      whiteMat,
+      [0,-.405,.055],
+      [1.18,.50,1.48]
+    );
+    pawMeshes.push(paw);
+    leg.userData={isFront,upper,lower,paw};
     legs.push(leg);
     return leg;
   }
-  makeLeg(-.235,.38,true);
-  makeLeg( .235,.38,true);
-  makeLeg(-.235,-.42,false);
-  makeLeg( .235,-.42,false);
+  makeLeg(-.205,.39,true);
+  makeLeg( .205,.39,true);
+  makeLeg(-.225,-.43,false);
+  makeLeg( .225,-.43,false);
 
+  // Segmented curved tail.
   const tailRoot=new THREE.Group();
-  tailRoot.position.set(0,.69,-.61);
+  tailRoot.position.set(0,.59,-.70);
   catRig.add(tailRoot);
-
   const tailSegments=[];
+  const tailMeshes=[];
   let tailParent=tailRoot;
-  for(let i=0;i<6;i++){
+  for(let i=0;i<7;i++){
     const seg=new THREE.Group();
-    seg.position.set(0,0,i===0?0:-.21);
+    seg.position.set(0,i===0?0:.035,i===0?0:-.18);
     tailParent.add(seg);
-    mesh(seg,new THREE.CylinderGeometry(.052-i*.004,.070-i*.004,.27,10),black,[0,.02,-.12],[1,1,1],[Math.PI/2,0,0]);
+    const tm=mesh(
+      seg,
+      new THREE.CylinderGeometry(Math.max(.032,.055-i*.004),Math.max(.04,.069-i*.004),.23,10),
+      coatMat,
+      [0,.02,-.10],
+      [1,1,1],
+      [Math.PI/2,0,0]
+    );
+    tailMeshes.push(tm);
     tailSegments.push(seg);
     tailParent=seg;
   }
-  tailRoot.rotation.x=-.34;
+  tailRoot.rotation.x=-.48;
+
+  // Tabby overlays.
+  const tabbyMarks=[];
+  for(const z of [-.34,-.10,.15]){
+    const ring=mesh(
+      catRig,
+      new THREE.TorusGeometry(.31,.026,8,28),
+      stripeMat,
+      [0,.54,z],
+      [.92,.76,1],
+      [0,0,0]
+    );
+    ring.visible=false;
+    tabbyMarks.push(ring);
+  }
+  for(let i=0;i<3;i++){
+    const mark=mesh(
+      head,
+      new THREE.BoxGeometry(.032,.16,.018),
+      stripeMat,
+      [(i-1)*.07,.13,.275],
+      [1,1,1],
+      [0,0,(i-1)*.12]
+    );
+    mark.visible=false;
+    tabbyMarks.push(mark);
+  }
+  const tailBands=[];
+  tailMeshes.forEach((tm,i)=>{
+    if(i%2===1){
+      const band=tm.clone();
+      band.material=stripeMat;
+      band.scale.set(1.07,.48,1.07);
+      band.position.y=.065;
+      band.visible=false;
+      tm.parent.add(band);
+      tailBands.push(band);
+    }
+  });
+
+  // --- Cat appearance customisation ---
+  const coatColours={
+    black:0x202326,
+    grey:0x777d82,
+    ginger:0xc97938,
+    brown:0x68483a,
+    cream:0xd9c19a,
+    white:0xeeeeea
+  };
+  const eyeColours={
+    green:0x9fbf62,
+    blue:0x6faed9,
+    amber:0xd69a37,
+    hazel:0x9a8748
+  };
+  const noseColours={
+    pink:0xd68d89,
+    black:0x252525,
+    brown:0x6c4637
+  };
+
+  let catAppearance={
+    coat:'black',
+    pattern:'tuxedo',
+    eyes:'green',
+    nose:'pink'
+  };
+
+  function darkerColour(hex){
+    const col=new THREE.Color(hex);
+    col.multiplyScalar(.48);
+    return col;
+  }
+
+  function applyAppearance(){
+    const base=coatColours[catAppearance.coat];
+    coatMat.color.setHex(base);
+    stripeMat.color.copy(darkerColour(base));
+    eyeMat.color.setHex(eyeColours[catAppearance.eyes]);
+    noseMat.color.setHex(noseColours[catAppearance.nose]);
+
+    const pattern=catAppearance.pattern;
+    const muzzleWhite=pattern==='tuxedo'||pattern==='bicolour';
+    const chestWhite=pattern==='tuxedo'||pattern==='chest'||pattern==='bicolour';
+    const pawsWhite=pattern==='tuxedo'||pattern==='socks'||pattern==='bicolour';
+
+    muzzleL.material=muzzleWhite?whiteMat:coatMat;
+    muzzleR.material=muzzleWhite?whiteMat:coatMat;
+    chest.material=chestWhite?whiteMat:coatMat;
+    pawMeshes.forEach(p=>p.material=pawsWhite?whiteMat:coatMat);
+
+    blaze.visible=pattern==='bicolour';
+    const tabby=pattern==='tabby';
+    tabbyMarks.forEach(m=>m.visible=tabby);
+    tailBands.forEach(m=>m.visible=tabby);
+  }
+  applyAppearance();
 
   // --- Age / growth ---
-  // Prototype clock is deliberately accelerated so growth can actually be tested:
-  // 1 real minute = 4 in-game weeks. The final game will use the chosen lifespan setting.
+  // Slower prototype ageing: 1 real minute = 1 in-game day.
+  // That means the starting 10-week kitten remains a kitten for nearly two hours
+  // of active play before reaching adolescence.
   let ageWeeks=10;
-  const AGE_WEEKS_PER_SECOND=4/60;
+  const AGE_WEEKS_PER_SECOND=1/420;
   let lifeStage='Kitten';
   let ageAdultness=0;
   let visualScale=.54;
@@ -230,65 +459,59 @@ try{
   }
 
   function formatAge(w){
-    if(w<52)return Math.max(1,Math.floor(w))+' weeks';
+    if(w<52){
+      const whole=Math.floor(w);
+      const days=Math.floor((w-whole)*7);
+      return whole+'w '+days+'d';
+    }
     const years=w/52;
-    if(years<2)return years.toFixed(1)+' years';
-    return Math.floor(years)+' years';
+    return years<2?years.toFixed(1)+' years':Math.floor(years)+' years';
   }
 
   function updateGrowth(){
     lifeStage=stageForAge(ageWeeks);
-
-    // adultness is 0 at birth and reaches 1 at one year old.
     ageAdultness=smooth01(ageWeeks/52);
 
     let overall;
-    if(ageWeeks<4){
-      overall=mix(.28,.43,smooth01(ageWeeks/4));
-    }else if(ageWeeks<26){
-      overall=mix(.43,.68,smooth01((ageWeeks-4)/22));
-    }else if(ageWeeks<52){
-      overall=mix(.68,1.0,smooth01((ageWeeks-26)/26));
-    }else{
-      overall=1.0;
-    }
+    if(ageWeeks<4)overall=mix(.28,.43,smooth01(ageWeeks/4));
+    else if(ageWeeks<26)overall=mix(.43,.68,smooth01((ageWeeks-4)/22));
+    else if(ageWeeks<52)overall=mix(.68,1.0,smooth01((ageWeeks-26)/26));
+    else overall=1.0;
 
-    // Our playable kitten starts intentionally much smaller than the old v0.0.8 cat.
     visualScale=overall;
     catRig.scale.setScalar(overall);
 
-    // Kittens have a larger rounder head, larger eyes, short muzzle and short legs.
     const youth=1-ageAdultness;
-    const headRel=mix(1.0,1.28,youth);
-    head.scale.setScalar(headRel);
 
-    const eyeRel=mix(1.0,1.22,youth);
-    eyes.forEach(e=>e.scale.setScalar(eyeRel));
+    // Kitten head stays proportionally larger while the body catches up.
+    head.scale.setScalar(mix(1.0,1.24,youth));
+    eyes.forEach(e=>e.scale.setScalar(mix(1.0,1.18,youth)));
 
-    const muzzleDepth=mix(1.0,.72,youth);
-    muzzleL.scale.z=.62*muzzleDepth;
-    muzzleR.scale.z=.62*muzzleDepth;
-    nose.position.z=mix(.382,.355,youth);
+    // Shorter muzzle, shorter legs and rounder body when young.
+    const muzzleDepth=mix(1.0,.78,youth);
+    muzzleL.scale.z=.58*muzzleDepth;
+    muzzleR.scale.z=.58*muzzleDepth;
+    cheekL.scale.z=.62*muzzleDepth;
+    cheekR.scale.z=.62*muzzleDepth;
+    nose.position.z=mix(.338,.315,youth);
 
-    const legY=mix(1.0,.70,youth);
+    const legY=mix(1.0,.73,youth);
     legs.forEach(leg=>{
       leg.scale.y=legY;
-      leg.position.y=mix(.44,.395,youth);
+      leg.position.y=mix(.43,.39,youth);
     });
 
-    // Body lengthens and becomes less round as the kitten matures.
-    torso.scale.z=mix(1.22,1.08,youth);
-    torso.scale.y=mix(.66,.72,youth);
-    shoulders.scale.z=mix(.92,.86,youth);
+    torso.scale.z=mix(1.16,1.04,youth);
+    torso.scale.y=mix(.50,.56,youth);
+    haunches.scale.z=mix(1.02,.94,youth);
+    shoulders.scale.z=mix(.88,.82,youth);
 
-    // Tail begins a little shorter and finer.
-    const tailRel=mix(1.0,.76,youth);
-    tailRoot.scale.set(tailRel,tailRel,tailRel);
+    const tailRel=mix(1.0,.80,youth);
+    tailRoot.scale.setScalar(tailRel);
 
-    // Senior cats keep adult size but carry themselves a little lower.
     if(lifeStage==='Senior'){
       catRig.position.y=-.025;
-      head.position.y=.855;
+      head.position.y=.765;
     }else{
       catRig.position.y=0;
     }
@@ -306,12 +529,70 @@ try{
   let movePhase=0;
   const move={x:0,y:0};
   let idlePhase=0;
+  let customOpen=false;
+  let savedCameraYaw=0;
+
+  const customPanel=document.getElementById('customPanel');
+  const customiseBtn=document.getElementById('customiseBtn');
+  const customDone=document.getElementById('customDone');
+
+  function markSelected(groupSelector,dataName,value){
+    document.querySelectorAll(groupSelector+' button').forEach(btn=>{
+      btn.classList.toggle('selected',btn.dataset[dataName]===value);
+    });
+  }
+
+  function openCustomiser(){
+    customOpen=true;
+    savedCameraYaw=cameraYaw;
+    move.x=move.y=0;
+    currentSpeed=0;
+    runHeld=false;
+    knob.style.transform='';
+    cameraYaw=cat.rotation.y+Math.PI;
+    customPanel.classList.add('open');
+  }
+
+  function closeCustomiser(){
+    customOpen=false;
+    cameraYaw=savedCameraYaw;
+    customPanel.classList.remove('open');
+  }
+
+  customiseBtn.addEventListener('pointerdown',e=>{e.preventDefault();openCustomiser()});
+  customDone.addEventListener('pointerdown',e=>{e.preventDefault();closeCustomiser()});
+
+  document.querySelectorAll('[data-coat]').forEach(btn=>btn.addEventListener('pointerdown',e=>{
+    e.preventDefault();
+    catAppearance.coat=btn.dataset.coat;
+    markSelected('#coatChoices','coat',catAppearance.coat);
+    applyAppearance();
+  }));
+  document.querySelectorAll('[data-pattern]').forEach(btn=>btn.addEventListener('pointerdown',e=>{
+    e.preventDefault();
+    catAppearance.pattern=btn.dataset.pattern;
+    markSelected('#patternChoices','pattern',catAppearance.pattern);
+    applyAppearance();
+  }));
+  document.querySelectorAll('[data-eye]').forEach(btn=>btn.addEventListener('pointerdown',e=>{
+    e.preventDefault();
+    catAppearance.eyes=btn.dataset.eye;
+    markSelected('#eyeChoices','eye',catAppearance.eyes);
+    applyAppearance();
+  }));
+  document.querySelectorAll('[data-nose]').forEach(btn=>btn.addEventListener('pointerdown',e=>{
+    e.preventDefault();
+    catAppearance.nose=btn.dataset.nose;
+    markSelected('#noseChoices','nose',catAppearance.nose);
+    applyAppearance();
+  }));
 
   const stick=document.getElementById('stick');
   const knob=document.getElementById('knob');
   let sid=null;
 
   function stickMove(e){
+    if(customOpen)return;
     const r=stick.getBoundingClientRect();
     const dx=e.clientX-(r.left+r.width/2);
     const dy=e.clientY-(r.top+r.height/2);
@@ -343,11 +624,11 @@ try{
   stick.addEventListener('pointercancel',endStick);
 
   const runBtn=document.getElementById('run');
-  runBtn.addEventListener('pointerdown',e=>{e.preventDefault();runHeld=true});
+  runBtn.addEventListener('pointerdown',e=>{e.preventDefault();if(!customOpen)runHeld=true});
   ['pointerup','pointercancel','pointerleave'].forEach(x=>runBtn.addEventListener(x,()=>runHeld=false));
 
   document.getElementById('jump').addEventListener('pointerdown',e=>{e.preventDefault();
-    if(onGround && lifeStage!=='Newborn'){
+    if(!customOpen && onGround && lifeStage!=='Newborn'){
       // Kittens start with a smaller hop and gain jump strength as they mature.
       const jumpStrength=mix(2.85,3.95,ageAdultness)*(lifeStage==='Senior'?.86:1);
       vy=jumpStrength;
@@ -357,6 +638,7 @@ try{
 
   let lookId=null,lastX=0;
   renderer.domElement.addEventListener('pointerdown',e=>{
+    if(customOpen)return;
     lookId=e.pointerId;
     lastX=e.clientX;
     renderer.domElement.setPointerCapture(lookId);
@@ -387,11 +669,11 @@ try{
     resizeRenderer();
     const dt=Math.min(clock.getDelta(),.033);
 
-    ageWeeks+=AGE_WEEKS_PER_SECOND*dt;
+    if(!customOpen)ageWeeks+=AGE_WEEKS_PER_SECOND*dt;
     updateGrowth();
 
     const inputMag=Math.min(1,Math.hypot(move.x,move.y));
-    const moving=inputMag>.06;
+    const moving=!customOpen && inputMag>.06;
 
     let desiredSpeed=0;
     if(moving && lifeStage!=='Newborn'){
@@ -461,16 +743,20 @@ try{
 
       const kittenBounce=mix(.018,.042,youth);
       const bob=Math.abs(Math.sin(movePhase*2))*kittenBounce*gait;
-      torso.position.y=.58+bob;
-      head.position.y=(lifeStage==='Senior'?.855:.88)+bob*.65;
+      torso.position.y=.53+bob;
+      shoulders.position.y=.56+bob*.65;
+      haunches.position.y=.56+bob*.45;
+      head.position.y=(lifeStage==='Senior'?.765:.79)+bob*.72;
 
       // A subtle side-to-side wobble gives kittens a less perfectly controlled gait.
       catRig.rotation.z=Math.sin(movePhase*.5)*.045*youth*gait;
       catRig.rotation.x=Math.sin(movePhase)*.018*youth*gait;
     }else{
       for(const leg of legs)leg.rotation.x*=Math.max(0,1-9*dt);
-      torso.position.y+=(.58-torso.position.y)*Math.min(1,8*dt);
-      const restingHeadY=lifeStage==='Senior'?.855:.88;
+      torso.position.y+=(.53-torso.position.y)*Math.min(1,8*dt);
+      shoulders.position.y+=(.56-shoulders.position.y)*Math.min(1,8*dt);
+      haunches.position.y+=(.56-haunches.position.y)*Math.min(1,8*dt);
+      const restingHeadY=lifeStage==='Senior'?.765:.79;
       head.position.y+=(restingHeadY-head.position.y)*Math.min(1,8*dt);
       catRig.rotation.z*=Math.max(0,1-6*dt);
       catRig.rotation.x*=Math.max(0,1-6*dt);
@@ -503,11 +789,11 @@ try{
     earL.rotation.z=-.05+Math.sin(t*2.3)*.025*idleCuriosity;
     earR.rotation.z=.05-Math.sin(t*2.0+.8)*.025*idleCuriosity;
 
-    // Smoother cat-height camera; it lowers and moves closer for a small kitten.
-    const targetHeight=mix(.40,.70,ageAdultness);
+    // Cat-height camera. Customisation brings it closer for a live preview.
+    const targetHeight=mix(.36,.64,ageAdultness);
     const target=cat.position.clone().add(new THREE.Vector3(0,targetHeight,0));
-    const dist=mix(2.45,3.15,ageAdultness);
-    const cameraLift=mix(1.05,1.52,ageAdultness);
+    const dist=customOpen?mix(1.55,1.95,ageAdultness):mix(2.35,3.05,ageAdultness);
+    const cameraLift=customOpen?mix(.70,.95,ageAdultness):mix(.98,1.42,ageAdultness);
     const desiredCam=target.clone().add(
       new THREE.Vector3(
         Math.sin(cameraYaw)*-dist,
@@ -519,7 +805,8 @@ try{
     camera.position.lerp(desiredCam,camBlend);
     camera.lookAt(target);
 
-    if(!onGround)status.textContent='Test Room • Jumping';
+    if(customOpen)status.textContent='Customising kitten';
+    else if(!onGround)status.textContent='Test Room • Jumping';
     else if(tired && runHeld)status.textContent='Test Room • Little legs are tired';
     else if(currentSpeed>2.5)status.textContent='Test Room • Running';
     else if(currentSpeed>.12)status.textContent='Test Room • Walking';
