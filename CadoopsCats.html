@@ -18,7 +18,8 @@ button{appearance:none;-webkit-appearance:none}
 .btn{pointer-events:auto;position:absolute;border:0;border-radius:50%;background:#ffffffaa;color:#222;font-weight:800;box-shadow:0 3px 10px #0004}
 #jump{right:24px;bottom:max(32px,env(safe-area-inset-bottom));width:78px;height:78px}
 #run{right:116px;bottom:max(42px,env(safe-area-inset-bottom));width:62px;height:62px}
-#hint{position:absolute;bottom:max(122px,calc(env(safe-area-inset-bottom) + 122px));right:20px;font-size:12px;opacity:.85}
+#meow{right:24px;bottom:max(122px,calc(env(safe-area-inset-bottom) + 122px));width:70px;height:70px;font-size:12px}
+#hint{position:absolute;bottom:max(198px,calc(env(safe-area-inset-bottom) + 198px));right:20px;font-size:12px;opacity:.85}
 #customiseBtn{pointer-events:auto;position:absolute;left:16px;top:max(82px,calc(env(safe-area-inset-top) + 68px));border:0;border-radius:14px;padding:10px 14px;background:#ffffffd9;color:#222;font-weight:800;font-size:12px;box-shadow:0 3px 10px #0004;touch-action:manipulation}
 #customPanel{display:none;position:fixed;inset:0;z-index:20;background:#0008;pointer-events:auto;align-items:center;justify-content:center;padding:max(14px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left))}
 #customPanel.open{display:flex}
@@ -37,11 +38,12 @@ button{appearance:none;-webkit-appearance:none}
 </head>
 <body>
 <div id="hud">
-  <div id="brand">Cadoops' Cats<div id="ver">Prototype v0.1.0</div><div id="age">Kitten • 10 weeks</div></div>
+  <div id="brand">Cadoops' Cats<div id="ver">Prototype v0.1.1</div><div id="age">Kitten • 10 weeks</div></div>
   <div id="status">Loading 3D world…</div>
   <div id="stick"><div id="knob"></div></div>
   <button class="btn" id="jump">JUMP</button>
   <button class="btn" id="run">RUN</button>
+  <button class="btn" id="meow">MEOW</button>
   <button id="customiseBtn">CUSTOMISE</button>
   <div id="hint">Drag anywhere else to turn camera</div>
 </div>
@@ -60,6 +62,18 @@ button{appearance:none;-webkit-appearance:none}
         <button class="swatch" data-coat="brown" aria-label="Brown coat" style="background:#68483a"></button>
         <button class="swatch" data-coat="cream" aria-label="Cream coat" style="background:#d9c19a"></button>
         <button class="swatch" data-coat="white" aria-label="White coat" style="background:#eee"></button>
+      </div>
+    </div>
+
+    <div class="customGroup">
+      <div class="customLabel">Secondary / marking colour</div>
+      <div class="choiceRow" id="secondaryChoices">
+        <button class="swatch selected" data-secondary="white" aria-label="White markings" style="background:#f2f0e9"></button>
+        <button class="swatch" data-secondary="cream" aria-label="Cream markings" style="background:#d9c19a"></button>
+        <button class="swatch" data-secondary="grey" aria-label="Grey markings" style="background:#777d82"></button>
+        <button class="swatch" data-secondary="black" aria-label="Black markings" style="background:#202326"></button>
+        <button class="swatch" data-secondary="ginger" aria-label="Ginger markings" style="background:#c97938"></button>
+        <button class="swatch" data-secondary="brown" aria-label="Brown markings" style="background:#68483a"></button>
       </div>
     </div>
 
@@ -181,7 +195,7 @@ try{
 
   // Customisable materials.
   const coatMat=new THREE.MeshStandardMaterial({color:0x202326,roughness:.9});
-  const whiteMat=new THREE.MeshStandardMaterial({color:0xf2f0e9,roughness:.96});
+  const markingMat=new THREE.MeshStandardMaterial({color:0xf2f0e9,roughness:.96});
   const noseMat=new THREE.MeshStandardMaterial({color:0xd68d89,roughness:.8});
   const innerEarMat=new THREE.MeshStandardMaterial({color:0xb86f73,roughness:.88});
   const eyeMat=new THREE.MeshStandardMaterial({color:0x9fbf62,roughness:.3,metalness:.03});
@@ -202,25 +216,28 @@ try{
 
   // Lower, longer feline body: shoulders, ribcage and rear haunches overlap
   // to make one continuous cat silhouette rather than a round blob.
-  const torso=mesh(catRig,new THREE.SphereGeometry(.5,24,18),coatMat,[0,.53,-.08],[.58,.50,1.16]);
-  const shoulders=mesh(catRig,new THREE.SphereGeometry(.34,22,16),coatMat,[0,.56,.40],[.82,.82,.88]);
-  const haunches=mesh(catRig,new THREE.SphereGeometry(.38,22,16),coatMat,[0,.56,-.47],[.88,.90,1.02]);
-  const neck=mesh(catRig,new THREE.SphereGeometry(.23,18,14),coatMat,[0,.68,.54],[.82,1.0,.76]);
+  const torso=mesh(catRig,new THREE.SphereGeometry(.5,24,18),coatMat,[0,.53,-.04],[.58,.50,.98]);
+  const shoulders=mesh(catRig,new THREE.SphereGeometry(.34,22,16),coatMat,[0,.56,.34],[.82,.82,.82]);
+  const haunches=mesh(catRig,new THREE.SphereGeometry(.38,22,16),coatMat,[0,.56,-.36],[.88,.90,.92]);
+  const neck=mesh(catRig,new THREE.SphereGeometry(.23,18,14),coatMat,[0,.68,.47],[.82,1.0,.72]);
 
-  // Marking meshes can be switched between coat and white at runtime.
-  const chest=mesh(catRig,new THREE.SphereGeometry(.22,18,13),whiteMat,[0,.49,.47],[.65,1.10,.34]);
+  // Marking meshes can be switched between coat and the chosen secondary colour.
+  const chest=mesh(catRig,new THREE.SphereGeometry(.22,18,13),markingMat,[0,.49,.41],[.65,1.10,.34]);
 
   const head=new THREE.Group();
-  head.position.set(0,.79,.72);
+  head.position.set(0,.79,.63);
   catRig.add(head);
   const headMesh=mesh(head,new THREE.SphereGeometry(.31,24,18),coatMat,[0,0,0],[1,.90,.84]);
 
   // Slight cheek width and compact muzzle make the face read as feline.
   const cheekL=mesh(head,new THREE.SphereGeometry(.13,16,12),coatMat,[-.13,-.055,.20],[1.1,.75,.62]);
   const cheekR=mesh(head,new THREE.SphereGeometry(.13,16,12),coatMat,[ .13,-.055,.20],[1.1,.75,.62]);
-  const muzzleL=mesh(head,new THREE.SphereGeometry(.115,16,12),whiteMat,[-.075,-.105,.255],[.90,.66,.58]);
-  const muzzleR=mesh(head,new THREE.SphereGeometry(.115,16,12),whiteMat,[ .075,-.105,.255],[.90,.66,.58]);
+  const muzzleL=mesh(head,new THREE.SphereGeometry(.115,16,12),markingMat,[-.075,-.105,.255],[.90,.66,.58]);
+  const muzzleR=mesh(head,new THREE.SphereGeometry(.115,16,12),markingMat,[ .075,-.105,.255],[.90,.66,.58]);
   const nose=mesh(head,new THREE.SphereGeometry(.052,14,10),noseMat,[0,-.075,.338],[1.10,.62,.72]);
+  const mouthMat=new THREE.MeshStandardMaterial({color:0x351b1e,roughness:.9});
+  const mouth=mesh(head,new THREE.SphereGeometry(.055,12,8),mouthMat,[0,-.145,.302],[.75,.16,.42]);
+  let meowMouthUntil=0;
 
   const earL=mesh(head,new THREE.ConeGeometry(.14,.31,3),coatMat,[-.19,.255,-.005],[.92,1,.72],[0,0,-.08]);
   const earR=mesh(head,new THREE.ConeGeometry(.14,.31,3),coatMat,[ .19,.255,-.005],[.92,1,.72],[0,0,.08]);
@@ -240,7 +257,7 @@ try{
   addEye(.115);
 
   // Small white blaze used by the bicolour preset.
-  const blaze=mesh(head,new THREE.SphereGeometry(.09,14,10),whiteMat,[0,.055,.272],[.52,1.55,.30]);
+  const blaze=mesh(head,new THREE.SphereGeometry(.09,14,10),markingMat,[0,.055,.272],[.52,1.55,.30]);
   blaze.visible=false;
 
   // Whiskers.
@@ -287,7 +304,7 @@ try{
     const paw=mesh(
       leg,
       new THREE.SphereGeometry(.082,12,9),
-      whiteMat,
+      markingMat,
       [0,-.405,.055],
       [1.18,.50,1.48]
     );
@@ -296,14 +313,14 @@ try{
     legs.push(leg);
     return leg;
   }
-  makeLeg(-.205,.39,true);
-  makeLeg( .205,.39,true);
-  makeLeg(-.225,-.43,false);
-  makeLeg( .225,-.43,false);
+  makeLeg(-.205,.31,true);
+  makeLeg( .205,.31,true);
+  makeLeg(-.225,-.33,false);
+  makeLeg( .225,-.33,false);
 
   // Segmented curved tail.
   const tailRoot=new THREE.Group();
-  tailRoot.position.set(0,.59,-.70);
+  tailRoot.position.set(0,.59,-.58);
   catRig.add(tailRoot);
   const tailSegments=[];
   const tailMeshes=[];
@@ -324,7 +341,7 @@ try{
     tailSegments.push(seg);
     tailParent=seg;
   }
-  tailRoot.rotation.x=-.48;
+  tailRoot.rotation.x=1.02;
 
   // Tabby overlays.
   const tabbyMarks=[];
@@ -388,6 +405,7 @@ try{
 
   let catAppearance={
     coat:'black',
+    secondary:'white',
     pattern:'tuxedo',
     eyes:'green',
     nose:'pink'
@@ -401,8 +419,10 @@ try{
 
   function applyAppearance(){
     const base=coatColours[catAppearance.coat];
+    const secondary=coatColours[catAppearance.secondary];
     coatMat.color.setHex(base);
-    stripeMat.color.copy(darkerColour(base));
+    markingMat.color.setHex(secondary);
+    stripeMat.color.setHex(secondary);
     eyeMat.color.setHex(eyeColours[catAppearance.eyes]);
     noseMat.color.setHex(noseColours[catAppearance.nose]);
 
@@ -411,10 +431,10 @@ try{
     const chestWhite=pattern==='tuxedo'||pattern==='chest'||pattern==='bicolour';
     const pawsWhite=pattern==='tuxedo'||pattern==='socks'||pattern==='bicolour';
 
-    muzzleL.material=muzzleWhite?whiteMat:coatMat;
-    muzzleR.material=muzzleWhite?whiteMat:coatMat;
-    chest.material=chestWhite?whiteMat:coatMat;
-    pawMeshes.forEach(p=>p.material=pawsWhite?whiteMat:coatMat);
+    muzzleL.material=muzzleWhite?markingMat:coatMat;
+    muzzleR.material=muzzleWhite?markingMat:coatMat;
+    chest.material=chestWhite?markingMat:coatMat;
+    pawMeshes.forEach(p=>p.material=pawsWhite?markingMat:coatMat);
 
     blaze.visible=pattern==='bicolour';
     const tabby=pattern==='tabby';
@@ -501,10 +521,10 @@ try{
       leg.position.y=mix(.43,.39,youth);
     });
 
-    torso.scale.z=mix(1.16,1.04,youth);
+    torso.scale.z=mix(.98,.92,youth);
     torso.scale.y=mix(.50,.56,youth);
-    haunches.scale.z=mix(1.02,.94,youth);
-    shoulders.scale.z=mix(.88,.82,youth);
+    haunches.scale.z=mix(.92,.86,youth);
+    shoulders.scale.z=mix(.82,.78,youth);
 
     const tailRel=mix(1.0,.80,youth);
     tailRoot.scale.setScalar(tailRel);
@@ -568,6 +588,12 @@ try{
     markSelected('#coatChoices','coat',catAppearance.coat);
     applyAppearance();
   }));
+  document.querySelectorAll('[data-secondary]').forEach(btn=>btn.addEventListener('pointerdown',e=>{
+    e.preventDefault();
+    catAppearance.secondary=btn.dataset.secondary;
+    markSelected('#secondaryChoices','secondary',catAppearance.secondary);
+    applyAppearance();
+  }));
   document.querySelectorAll('[data-pattern]').forEach(btn=>btn.addEventListener('pointerdown',e=>{
     e.preventDefault();
     catAppearance.pattern=btn.dataset.pattern;
@@ -626,6 +652,57 @@ try{
   const runBtn=document.getElementById('run');
   runBtn.addEventListener('pointerdown',e=>{e.preventDefault();if(!customOpen)runHeld=true});
   ['pointerup','pointercancel','pointerleave'].forEach(x=>runBtn.addEventListener(x,()=>runHeld=false));
+
+  let audioCtx=null;
+  function playMeow(){
+    if(customOpen)return;
+    const AC=window.AudioContext||window.webkitAudioContext;
+    if(!AC)return;
+    if(!audioCtx)audioCtx=new AC();
+    if(audioCtx.state==='suspended')audioCtx.resume();
+
+    const now=audioCtx.currentTime;
+    const out=audioCtx.createGain();
+    const formant=audioCtx.createBiquadFilter();
+    const osc1=audioCtx.createOscillator();
+    const osc2=audioCtx.createOscillator();
+
+    formant.type='bandpass';
+    formant.frequency.setValueAtTime(1150,now);
+    formant.Q.setValueAtTime(2.2,now);
+
+    osc1.type='sawtooth';
+    osc2.type='triangle';
+
+    const kitten=1-ageAdultness;
+    const base=420+kitten*170;
+    osc1.frequency.setValueAtTime(base,now);
+    osc1.frequency.exponentialRampToValueAtTime(base*1.52,now+.12);
+    osc1.frequency.exponentialRampToValueAtTime(base*.82,now+.43);
+
+    osc2.frequency.setValueAtTime(base*2.02,now);
+    osc2.frequency.exponentialRampToValueAtTime(base*2.35,now+.13);
+    osc2.frequency.exponentialRampToValueAtTime(base*1.45,now+.43);
+
+    out.gain.setValueAtTime(.0001,now);
+    out.gain.exponentialRampToValueAtTime(.12,now+.025);
+    out.gain.setValueAtTime(.12,now+.13);
+    out.gain.exponentialRampToValueAtTime(.0001,now+.46);
+
+    osc1.connect(formant);
+    osc2.connect(formant);
+    formant.connect(out);
+    out.connect(audioCtx.destination);
+
+    osc1.start(now);
+    osc2.start(now);
+    osc1.stop(now+.48);
+    osc2.stop(now+.48);
+    meowMouthUntil=performance.now()+430;
+  }
+
+  const meowBtn=document.getElementById('meow');
+  meowBtn.addEventListener('pointerdown',e=>{e.preventDefault();playMeow()});
 
   document.getElementById('jump').addEventListener('pointerdown',e=>{e.preventDefault();
     if(!customOpen && onGround && lifeStage!=='Newborn'){
@@ -729,33 +806,79 @@ try{
       onGround=true;
     }
 
-    // Procedural cat gait. Young kittens are bouncier and slightly clumsier.
+    // Four-beat feline walk, changing into a diagonal trot/run at speed.
     const adultRun=4.35;
     const gait=Math.min(1,currentSpeed/adultRun);
     const youth=1-ageAdultness;
+
     if(currentSpeed>.08 && onGround){
-      movePhase+=dt*(runHeld?11.5:7.2)*(0.45+gait*.65);
-      const swing=Math.sin(movePhase)*(runHeld?.50:.34)*gait;
-      legs[0].rotation.x=swing;
-      legs[3].rotation.x=swing;
-      legs[1].rotation.x=-swing;
-      legs[2].rotation.x=-swing;
+      const running=runHeld && !tired && currentSpeed>2.0;
+      movePhase+=dt*(running?10.8:6.4)*(0.55+gait*.75);
 
-      const kittenBounce=mix(.018,.042,youth);
-      const bob=Math.abs(Math.sin(movePhase*2))*kittenBounce*gait;
-      torso.position.y=.53+bob;
-      shoulders.position.y=.56+bob*.65;
-      haunches.position.y=.56+bob*.45;
-      head.position.y=(lifeStage==='Senior'?.765:.79)+bob*.72;
+      // Order: front-left, front-right, rear-left, rear-right.
+      const walkPhases=[Math.PI*.5,Math.PI*1.5,0,Math.PI];
+      const runPhases=[0,Math.PI,Math.PI,0];
 
-      // A subtle side-to-side wobble gives kittens a less perfectly controlled gait.
-      catRig.rotation.z=Math.sin(movePhase*.5)*.045*youth*gait;
-      catRig.rotation.x=Math.sin(movePhase)*.018*youth*gait;
+      legs.forEach((leg,i)=>{
+        const phase=movePhase+(running?runPhases[i]:walkPhases[i]);
+        const stride=Math.sin(phase);
+        const lift=Math.max(0,Math.sin(phase+Math.PI*.18));
+        const amp=(running?.62:.38)*gait;
+
+        // Whole leg swings from the shoulder/hip.
+        leg.rotation.x=stride*amp;
+
+        // Lower leg folds as the paw leaves the floor, then extends before contact.
+        const lower=leg.userData.lower;
+        const upper=leg.userData.upper;
+        const paw=leg.userData.paw;
+        upper.rotation.x+=(stride*(running?.16:.10)-upper.rotation.x)*Math.min(1,12*dt);
+        lower.rotation.x+=((-lift*(running?.58:.42))-lower.rotation.x)*Math.min(1,14*dt);
+        paw.rotation.x+=((lift*(running?.34:.24))-paw.rotation.x)*Math.min(1,16*dt);
+
+        // A tiny paw lift stops the feet looking like rigid pendulums.
+        paw.position.y=-.405+lift*(running?.055:.035);
+      });
+
+      // Cats flex through the spine. The shoulders and pelvis don't rise together:
+      // one takes weight while the other follows.
+      const bodyWave=Math.sin(movePhase*2);
+      const shoulderWave=Math.sin(movePhase*2+.55);
+      const haunchWave=Math.sin(movePhase*2-.55);
+      const bounce=(running?.026:.014)*gait;
+
+      shoulders.position.y=.56+shoulderWave*bounce;
+      haunches.position.y=.56+haunchWave*bounce;
+      torso.position.y=.53+bodyWave*bounce*.55;
+
+      // Subtle compression/extension of the trunk during faster movement.
+      const stretch=running?Math.sin(movePhase)*.045*gait:Math.sin(movePhase)*.015*gait;
+      torso.scale.z+=( (.98+stretch)-torso.scale.z )*Math.min(1,10*dt);
+
+      neck.rotation.x=Math.sin(movePhase*2+.3)*.025*gait;
+      head.position.y=(lifeStage==='Senior'?.765:.79)+shoulderWave*bounce*.55;
+      head.rotation.x=Math.sin(movePhase*2+.8)*.018*gait;
+
+      // Hips and shoulders counter-rotate slightly, producing a feline body sway.
+      catRig.rotation.z=Math.sin(movePhase)*.018*gait + Math.sin(movePhase*.5)*.020*youth*gait;
+      torso.rotation.y=Math.sin(movePhase)*.035*gait;
+      shoulders.rotation.y=-Math.sin(movePhase)*.045*gait;
+      haunches.rotation.y=Math.sin(movePhase)*.055*gait;
     }else{
-      for(const leg of legs)leg.rotation.x*=Math.max(0,1-9*dt);
+      for(const leg of legs){
+        leg.rotation.x*=Math.max(0,1-10*dt);
+        leg.userData.upper.rotation.x*=Math.max(0,1-10*dt);
+        leg.userData.lower.rotation.x*=Math.max(0,1-12*dt);
+        leg.userData.paw.rotation.x*=Math.max(0,1-12*dt);
+        leg.userData.paw.position.y+=(-.405-leg.userData.paw.position.y)*Math.min(1,12*dt);
+      }
       torso.position.y+=(.53-torso.position.y)*Math.min(1,8*dt);
       shoulders.position.y+=(.56-shoulders.position.y)*Math.min(1,8*dt);
       haunches.position.y+=(.56-haunches.position.y)*Math.min(1,8*dt);
+      torso.rotation.y*=Math.max(0,1-7*dt);
+      shoulders.rotation.y*=Math.max(0,1-7*dt);
+      haunches.rotation.y*=Math.max(0,1-7*dt);
+      neck.rotation.x*=Math.max(0,1-7*dt);
       const restingHeadY=lifeStage==='Senior'?.765:.79;
       head.position.y+=(restingHeadY-head.position.y)*Math.min(1,8*dt);
       catRig.rotation.z*=Math.max(0,1-6*dt);
@@ -765,29 +888,42 @@ try{
     // Tuck legs slightly in the air.
     if(!onGround){
       for(let i=0;i<legs.length;i++){
-        const target=legs[i].userData.isFront?-.32:.34;
+        const target=legs[i].userData.isFront?-.28:.30;
         legs[i].rotation.x+=(target-legs[i].rotation.x)*Math.min(1,8*dt);
+        legs[i].userData.lower.rotation.x+=(-.42-legs[i].userData.lower.rotation.x)*Math.min(1,8*dt);
+        legs[i].userData.paw.rotation.x+=(.22-legs[i].userData.paw.rotation.x)*Math.min(1,8*dt);
       }
     }
 
-    // Playful kitten idle: more tail activity, tiny head/ear fidgets and curiosity.
+    // Upright, expressive tail with a travelling sway from base to tip.
     const t=performance.now()*.001;
     idlePhase+=dt;
     const youthIdle=1-ageAdultness;
-    tailRoot.rotation.y=
-      Math.sin(t*(1.7+youthIdle*.8))*(.20+youthIdle*.11)+
-      (moving?Math.sin(movePhase*.5)*.08:0);
+
+    const tailBaseTarget=1.02 + (moving?.12:.20);
+    tailRoot.rotation.x+=(tailBaseTarget-tailRoot.rotation.x)*Math.min(1,6*dt);
+    tailRoot.rotation.y=Math.sin(t*(1.25+youthIdle*.45))*(moving?.14:.24);
+
     tailSegments.forEach((seg,i)=>{
-      seg.rotation.y=Math.sin(t*(1.5+youthIdle*.4)-i*.32)*(.07+i*.01+youthIdle*.018);
-      seg.rotation.x=-.03-i*.018;
+      const along=i/Math.max(1,tailSegments.length-1);
+      seg.rotation.y=
+        Math.sin(t*1.75-i*.55)*(0.06+along*.16) +
+        (moving?Math.sin(movePhase*.45-i*.25)*.045:0);
+      // The upper section curls gently back instead of pointing like a rigid pole.
+      seg.rotation.x=-.055-(along*.065);
     });
 
     const idleCuriosity=!moving&&onGround ? youthIdle : 0;
     head.rotation.y=Math.sin(t*.72)*.055*idleCuriosity;
-    head.rotation.x=Math.sin(t*.91)*.025*idleCuriosity;
-    head.rotation.z=Math.sin(movePhase)*.012*gait + Math.sin(t*.63)*.012*idleCuriosity;
-    earL.rotation.z=-.05+Math.sin(t*2.3)*.025*idleCuriosity;
-    earR.rotation.z=.05-Math.sin(t*2.0+.8)*.025*idleCuriosity;
+    if(currentSpeed<=.08)head.rotation.x=Math.sin(t*.91)*.025*idleCuriosity;
+    head.rotation.z=Math.sin(movePhase)*.010*gait + Math.sin(t*.63)*.012*idleCuriosity;
+    earL.rotation.z=-.08+Math.sin(t*2.3)*.025*idleCuriosity;
+    earR.rotation.z=.08-Math.sin(t*2.0+.8)*.025*idleCuriosity;
+
+    // Tiny visible mouth opening while the meow plays.
+    const meowing=performance.now()<meowMouthUntil;
+    mouth.scale.y+=( (meowing?.72:.16)-mouth.scale.y )*Math.min(1,18*dt);
+    mouth.position.y+=( (meowing?-.157:-.145)-mouth.position.y )*Math.min(1,18*dt);
 
     // Cat-height camera. Customisation brings it closer for a live preview.
     const targetHeight=mix(.36,.64,ageAdultness);
@@ -806,6 +942,7 @@ try{
     camera.lookAt(target);
 
     if(customOpen)status.textContent='Customising kitten';
+    else if(performance.now()<meowMouthUntil)status.textContent='Test Room • Meow!';
     else if(!onGround)status.textContent='Test Room • Jumping';
     else if(tired && runHeld)status.textContent='Test Room • Little legs are tired';
     else if(currentSpeed>2.5)status.textContent='Test Room • Running';
