@@ -20,6 +20,7 @@ button{appearance:none;-webkit-appearance:none}
 #run{right:116px;bottom:max(42px,env(safe-area-inset-bottom));width:62px;height:62px}
 #meow{right:24px;bottom:max(122px,calc(env(safe-area-inset-bottom) + 122px));width:70px;height:70px;font-size:12px}
 #purr{right:106px;bottom:max(126px,calc(env(safe-area-inset-bottom) + 126px));width:62px;height:62px;font-size:11px}
+#interact{display:none;left:50%;transform:translateX(-50%);bottom:max(38px,calc(env(safe-area-inset-bottom) + 38px));width:auto;min-width:142px;height:54px;border-radius:18px;padding:0 18px;font-size:12px;white-space:nowrap}
 #hint{position:absolute;bottom:max(202px,calc(env(safe-area-inset-bottom) + 202px));right:20px;font-size:12px;opacity:.85}
 #customiseBtn{pointer-events:auto;position:absolute;left:16px;top:max(82px,calc(env(safe-area-inset-top) + 68px));border:0;border-radius:14px;padding:10px 14px;background:#ffffffd9;color:#222;font-weight:800;font-size:12px;box-shadow:0 3px 10px #0004;touch-action:manipulation}
 #musicBtn{pointer-events:auto;position:absolute;left:16px;top:max(128px,calc(env(safe-area-inset-top) + 114px));border:0;border-radius:14px;padding:9px 12px;background:#ffffffc9;color:#222;font-weight:800;font-size:11px;box-shadow:0 3px 10px #0004;touch-action:manipulation}
@@ -64,13 +65,14 @@ button{appearance:none;-webkit-appearance:none}
 </div>
 
 <div id="hud">
-  <div id="brand">Cadoops' Cats<div id="ver">Prototype v0.1.6</div><div id="age">Kitten • 10 weeks</div></div>
+  <div id="brand">Cadoops' Cats<div id="ver">Prototype v0.2.0</div><div id="age">Kitten • 10 weeks</div></div>
   <div id="status">Loading 3D world…</div>
   <div id="stick"><div id="knob"></div></div>
   <button class="btn" id="jump">JUMP</button>
   <button class="btn" id="run">RUN</button>
   <button class="btn" id="meow">MEOW</button>
   <button class="btn" id="purr">PURR</button>
+  <button class="btn" id="interact">MAKE BISCUITS</button>
   <button id="customiseBtn">CUSTOMISE</button>
   <button id="musicBtn">MUSIC: ON</button>
   <button id="settingsBtn">SETTINGS</button>
@@ -344,34 +346,330 @@ try{
   sun.shadow.mapSize.set(1024,1024);
   scene.add(sun);
 
-  const floor=new THREE.Mesh(
-    new THREE.PlaneGeometry(24,24),
-    new THREE.MeshStandardMaterial({color:0xcaa97c,roughness:.92})
-  );
+  // --- Cadoops' house ---
+  const floorMat=new THREE.MeshStandardMaterial({color:0xc8a77e,roughness:.90});
+  const carpetMat=new THREE.MeshStandardMaterial({color:0xb7aaa0,roughness:1});
+  const kitchenFloorMat=new THREE.MeshStandardMaterial({color:0xd5d1c9,roughness:.86});
+  const wallMat=new THREE.MeshStandardMaterial({color:0xeee5d8,roughness:.94});
+  const trimMat=new THREE.MeshStandardMaterial({color:0xf8f5ee,roughness:.90});
+  const woodMat=new THREE.MeshStandardMaterial({color:0x815e42,roughness:.82});
+  const darkWoodMat=new THREE.MeshStandardMaterial({color:0x4f382d,roughness:.84});
+  const sofaMat=new THREE.MeshStandardMaterial({color:0x657a70,roughness:.92});
+  const fabricMat=new THREE.MeshStandardMaterial({color:0x8d6f67,roughness:1});
+  const creamFabric=new THREE.MeshStandardMaterial({color:0xe4d9c6,roughness:1});
+  const counterMat=new THREE.MeshStandardMaterial({color:0xc9c2b8,roughness:.75});
+  const metalMat=new THREE.MeshStandardMaterial({color:0x9da3a6,roughness:.45,metalness:.45});
+  const blackMat=new THREE.MeshStandardMaterial({color:0x242628,roughness:.65});
+  const plantMat=new THREE.MeshStandardMaterial({color:0x50734d,roughness:.94});
+  const potMat=new THREE.MeshStandardMaterial({color:0xa96548,roughness:.92});
+  const bedMat=new THREE.MeshStandardMaterial({color:0x9e6d78,roughness:1});
+  const catBedMat=new THREE.MeshStandardMaterial({color:0xb45b63,roughness:1});
+  const catBedInnerMat=new THREE.MeshStandardMaterial({color:0xe1b0a7,roughness:1});
+
+  function box(x,y,z,w,h,d,mat=wallMat,parent=scene){
+    const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
+    m.position.set(x,y,z);
+    m.castShadow=m.receiveShadow=true;
+    parent.add(m);
+    return m;
+  }
+
+  function cylinder(x,y,z,r,h,mat,parent=scene){
+    const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,14),mat);
+    m.position.set(x,y,z);
+    m.castShadow=m.receiveShadow=true;
+    parent.add(m);
+    return m;
+  }
+
+  // Floor zones make the house immediately read as separate rooms.
+  const floor=new THREE.Mesh(new THREE.PlaneGeometry(18,17),floorMat);
   floor.rotation.x=-Math.PI/2;
   floor.receiveShadow=true;
   scene.add(floor);
 
-  const grid=new THREE.GridHelper(24,24,0x8f7659,0xb79a76);
-  grid.position.y=.004;
-  scene.add(grid);
+  const kitchenFloor=new THREE.Mesh(new THREE.PlaneGeometry(6.6,7.2),kitchenFloorMat);
+  kitchenFloor.rotation.x=-Math.PI/2;
+  kitchenFloor.position.set(-5.55,.006,-3.8);
+  kitchenFloor.receiveShadow=true;
+  scene.add(kitchenFloor);
 
-  const wallMat=new THREE.MeshStandardMaterial({color:0xe8dfd0,roughness:.9});
-  function box(x,y,z,w,h,d,mat=wallMat){
-    const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
-    m.position.set(x,y,z);
-    m.castShadow=m.receiveShadow=true;
-    scene.add(m);
+  const bedroomCarpet=new THREE.Mesh(new THREE.PlaneGeometry(7.0,6.3),carpetMat);
+  bedroomCarpet.rotation.x=-Math.PI/2;
+  bedroomCarpet.position.set(5.25,.008,-4.15);
+  bedroomCarpet.receiveShadow=true;
+  scene.add(bedroomCarpet);
+
+  const livingRug=new THREE.Mesh(new THREE.PlaneGeometry(5.2,3.7),new THREE.MeshStandardMaterial({color:0x9b7d63,roughness:1}));
+  livingRug.rotation.x=-Math.PI/2;
+  livingRug.position.set(-2.0,.012,3.1);
+  livingRug.receiveShadow=true;
+  scene.add(livingRug);
+
+  // Collision/platform database. Furniture is physical, not just decoration.
+  const solidBoxes=[];
+  const climbSurfaces=[];
+  const CAT_COLLISION_RADIUS=.17;
+
+  function registerSolid(x,z,w,d,top,base=0,climbable=false,name='object'){
+    const item={x,z,w,d,top,base,name};
+    solidBoxes.push(item);
+    if(climbable)climbSurfaces.push(item);
+    return item;
+  }
+
+  function solidBox(x,y,z,w,h,d,mat=wallMat,{climbable=false,name='object'}={}){
+    const m=box(x,y,z,w,h,d,mat);
+    registerSolid(x,z,w,d,y+h/2,y-h/2,climbable,name);
     return m;
   }
 
-  box(0,1.5,-8,16,3,.25);
-  box(-8,1.5,0,.25,3,16);
-  box(8,1.5,0,.25,3,16);
+  function insideSurface(x,z,s,pad=0){
+    return x>s.x-s.w/2-pad && x<s.x+s.w/2+pad &&
+           z>s.z-s.d/2-pad && z<s.z+s.d/2+pad;
+  }
 
-  const sofaMat=new THREE.MeshStandardMaterial({color:0x667b70,roughness:.9});
-  box(-3,.45,-3,3.5,.8,1.3,sofaMat);
-  box(-3,1,-3.55,3.5,1.1,.25,sofaMat);
+  function collidesWithSolid(x,z,y){
+    for(const s of solidBoxes){
+      if(!insideSurface(x,z,s,CAT_COLLISION_RADIUS))continue;
+      // Once the cat's feet are at the object's top it is allowed to occupy it.
+      if(y>=s.top-.065)continue;
+      if(y<s.top-.065)return true;
+    }
+    return false;
+  }
+
+  function resolveHouseCollision(oldX,oldZ){
+    let nx=cat.position.x,nz=cat.position.z;
+    if(collidesWithSolid(nx,oldZ,cat.position.y))nx=oldX;
+    if(collidesWithSolid(nx,nz,cat.position.y))nz=oldZ;
+    cat.position.x=nx;
+    cat.position.z=nz;
+  }
+
+  function landingSurfaceHeight(x,z,previousY,newY){
+    let best=0;
+    for(const s of climbSurfaces){
+      if(!insideSurface(x,z,s,-.035))continue;
+      const top=s.top;
+      if(previousY>=top-.03 && newY<=top+.035 && top>best)best=top;
+    }
+    return best;
+  }
+
+  // Outer walls.
+  solidBox(0,1.45,-8.5,18,2.9,.22,wallMat,{name:'north wall'});
+  solidBox(-9,1.45,0,.22,2.9,17,wallMat,{name:'west wall'});
+  solidBox(9,1.45,0,.22,2.9,17,wallMat,{name:'east wall'});
+  solidBox(-5.6,1.45,8.5,6.8,2.9,.22,wallMat,{name:'south wall left'});
+  solidBox(5.6,1.45,8.5,6.8,2.9,.22,wallMat,{name:'south wall right'});
+
+  // Interior walls with doorway gaps.
+  solidBox(3.55,1.45,-6.2,.18,2.9,4.6,wallMat,{name:'bedroom wall'});
+  solidBox(3.55,1.45,-.8,.18,2.9,2.1,wallMat,{name:'bedroom wall'});
+  solidBox(-2.25,1.45,-5.65,.18,2.9,5.7,wallMat,{name:'kitchen wall'});
+  solidBox(-2.25,1.45,.25,.18,2.9,1.25,wallMat,{name:'kitchen wall'});
+
+  // Skirting/trim.
+  box(0,.07,-8.36,17.6,.14,.08,trimMat);
+  box(-8.86,.07,0,.08,.14,16.6,trimMat);
+  box(8.86,.07,0,.08,.14,16.6,trimMat);
+
+  // Windows and wall decorations.
+  box(-4.9,1.72,-8.37,2.5,1.05,.06,new THREE.MeshStandardMaterial({color:0x9fc8dc,roughness:.3}));
+  box(5.4,1.72,-8.37,2.5,1.05,.06,new THREE.MeshStandardMaterial({color:0x9fc8dc,roughness:.3}));
+  box(8.86,1.65,2.6,.06,1.15,2.4,new THREE.MeshStandardMaterial({color:0xaad0df,roughness:.3}));
+  box(-.5,1.65,8.37,1.7,1.0,.05,new THREE.MeshStandardMaterial({color:0x765b48,roughness:.75}));
+
+  // ---------------- Living room ----------------
+  // Sofa seat + back + arms. Seat is a usable platform.
+  solidBox(-3.6,.34,3.65,3.7,.68,1.35,sofaMat,{climbable:true,name:'sofa seat'});
+  solidBox(-3.6,.92,4.22,3.7,.72,.25,sofaMat,{name:'sofa back'});
+  solidBox(-5.35,.58,3.65,.25,.95,1.35,sofaMat,{climbable:true,name:'sofa arm'});
+  solidBox(-1.85,.58,3.65,.25,.95,1.35,sofaMat,{climbable:true,name:'sofa arm'});
+  box(-4.25,.70,3.45,1.0,.28,.85,creamFabric);
+  box(-2.95,.70,3.45,1.0,.28,.85,creamFabric);
+
+  // Coffee table and TV unit.
+  solidBox(-1.2,.27,2.65,2.5,.54,1.25,woodMat,{climbable:true,name:'coffee table'});
+  solidBox(-1.2,.58,6.15,2.9,.52,.62,darkWoodMat,{climbable:true,name:'tv console'});
+  box(-1.2,1.20,6.23,2.35,1.12,.10,blackMat);
+  box(-1.2,1.18,6.16,2.05,.84,.04,new THREE.MeshStandardMaterial({color:0x22343e,roughness:.25}));
+
+  // Sideboard/bookshelf: staged shelves make it climbable.
+  solidBox(-7.65,.24,2.1,1.4,.48,.55,woodMat,{climbable:true,name:'low shelf'});
+  solidBox(-7.65,.57,2.1,1.4,.18,.55,woodMat,{climbable:true,name:'middle shelf'});
+  solidBox(-7.65,.90,2.1,1.4,.18,.55,woodMat,{climbable:true,name:'upper shelf'});
+
+  // Plant.
+  cylinder(-7.6,.28,5.9,.32,.55,potMat);
+  cylinder(-7.6,.72,5.9,.18,.70,plantMat);
+
+  // ---------------- Kitchen ----------------
+  solidBox(-7.6,.43,-6.6,2.3,.86,.70,counterMat,{climbable:true,name:'kitchen counter'});
+  solidBox(-5.0,.43,-6.6,2.3,.86,.70,counterMat,{climbable:true,name:'kitchen counter'});
+  solidBox(-7.85,.43,-3.15,.70,.86,5.0,counterMat,{climbable:true,name:'kitchen counter'});
+  box(-6.35,.89,-6.6,5.0,.08,.82,blackMat);
+  box(-7.85,.89,-3.15,.82,.08,5.0,blackMat);
+  box(-7.1,1.1,-6.58,.62,.35,.06,metalMat); // hob/splash detail
+  box(-4.65,1.30,-8.30,1.1,1.6,.14,metalMat); // fridge front
+
+  // Step stool gives kitten a route onto counters.
+  solidBox(-5.3,.18,-4.1,.75,.36,.75,woodMat,{climbable:true,name:'kitchen stool'});
+  solidBox(-5.3,.47,-4.1,.64,.20,.64,woodMat,{climbable:true,name:'kitchen stool top'});
+
+  // ---------------- Dining area ----------------
+  // Table top + individual legs.
+  solidBox(.5,.41,-2.35,2.55,.20,1.65,woodMat,{climbable:true,name:'dining table'});
+  for(const x of [-.45,1.45]){
+    for(const z of [-2.85,-1.85])solidBox(x,.22,z,.15,.44,.15,darkWoodMat,{name:'table leg'});
+  }
+  // Chairs serve as stepping platforms.
+  for(const p of [[-1.0,-2.35],[2.0,-2.35],[.5,-3.6]]){
+    solidBox(p[0],.24,p[1],.72,.48,.72,fabricMat,{climbable:true,name:'dining chair'});
+    box(p[0],.73,p[1]+.28,.72,.95,.12,woodMat);
+  }
+
+  // ---------------- Bedroom ----------------
+  // Human bed is one large, soft climbable surface.
+  solidBox(6.15,.30,-5.0,4.1,.60,2.7,bedMat,{climbable:true,name:'human bed'});
+  box(6.15,.71,-6.18,4.1,.85,.22,darkWoodMat);
+  box(5.25,.66,-5.65,1.55,.28,.72,creamFabric);
+  box(7.05,.66,-5.65,1.55,.28,.72,creamFabric);
+  solidBox(4.15,.28,-7.05,.88,.56,.72,darkWoodMat,{climbable:true,name:'bedside table'});
+  solidBox(8.05,.28,-7.05,.88,.56,.72,darkWoodMat,{climbable:true,name:'bedside table'});
+
+  // ---------------- Cat zone ----------------
+  const catBedPos=new THREE.Vector3(5.2,0,2.85);
+  const catBedGroup=new THREE.Group();
+  catBedGroup.position.copy(catBedPos);
+  scene.add(catBedGroup);
+  const bedRing=new THREE.Mesh(new THREE.TorusGeometry(.63,.18,12,28),catBedMat);
+  bedRing.rotation.x=Math.PI/2;
+  bedRing.position.y=.16;
+  bedRing.castShadow=bedRing.receiveShadow=true;
+  catBedGroup.add(bedRing);
+  const bedCushion=new THREE.Mesh(new THREE.CylinderGeometry(.54,.58,.16,28),catBedInnerMat);
+  bedCushion.position.y=.10;
+  bedCushion.castShadow=bedCushion.receiveShadow=true;
+  catBedGroup.add(bedCushion);
+  const CAT_BED_TOP=.18;
+  registerSolid(catBedPos.x,catBedPos.z,1.15,1.15,CAT_BED_TOP,0,true,'cat bed');
+
+  // Cat tree: staged, reachable platforms.
+  const catTreeX=7.1,catTreeZ=4.8;
+  cylinder(catTreeX,.34,catTreeZ,.16,.68,new THREE.MeshStandardMaterial({color:0xb69a72,roughness:1}));
+  solidBox(catTreeX,.18,catTreeZ,.95,.22,.95,creamFabric,{climbable:true,name:'cat tree base'});
+  solidBox(catTreeX-.34,.43,catTreeZ,.78,.18,.72,creamFabric,{climbable:true,name:'cat tree level 1'});
+  cylinder(catTreeX-.02,.61,catTreeZ,.12,.46,new THREE.MeshStandardMaterial({color:0xb69a72,roughness:1}));
+  solidBox(catTreeX+.18,.70,catTreeZ,.78,.18,.72,creamFabric,{climbable:true,name:'cat tree level 2'});
+  cylinder(catTreeX+.16,.90,catTreeZ,.11,.45,new THREE.MeshStandardMaterial({color:0xb69a72,roughness:1}));
+  solidBox(catTreeX-.10,.99,catTreeZ,.72,.18,.68,creamFabric,{climbable:true,name:'cat tree top'});
+
+  // Scratching post.
+  cylinder(4.0,.39,5.7,.16,.78,new THREE.MeshStandardMaterial({color:0xb49669,roughness:1}));
+  solidBox(4.0,.06,5.7,.70,.12,.70,darkWoodMat,{climbable:true,name:'scratcher base'});
+
+  // Window sill / lookout platform.
+  solidBox(7.95,.48,2.62,.65,.18,2.45,trimMat,{climbable:true,name:'window sill'});
+
+  // ---------------- Toys ----------------
+  const toyBalls=[];
+  function addToyBall(x,z,color){
+    const m=new THREE.Mesh(
+      new THREE.SphereGeometry(.11,14,10),
+      new THREE.MeshStandardMaterial({color,roughness:.72})
+    );
+    m.position.set(x,.11,z);
+    m.castShadow=true;
+    scene.add(m);
+    toyBalls.push({mesh:m,vx:0,vz:0,r:.11});
+  }
+  addToyBall(2.2,4.25,0xd64e4e);
+  addToyBall(3.1,5.25,0x4e75d6);
+  addToyBall(-.15,1.15,0xe0b849);
+
+  // ---------------- Placeholder humans ----------------
+  function makeHuman({shirt=0x49749a,trousers=0x35383b,hair=0x4b3429,skin=0xd9ad89,height=1.78}={}){
+    const human=new THREE.Group();
+    const skinMat=new THREE.MeshStandardMaterial({color:skin,roughness:.9});
+    const shirtMat=new THREE.MeshStandardMaterial({color:shirt,roughness:.92});
+    const trouserMat=new THREE.MeshStandardMaterial({color:trousers,roughness:.94});
+    const hairMat=new THREE.MeshStandardMaterial({color:hair,roughness:.96});
+
+    const torso=box(0,height*.66,0,.44,height*.43,.25,shirtMat,human);
+    const head=new THREE.Mesh(new THREE.SphereGeometry(.16,16,12),skinMat);
+    head.position.set(0,height*.95,0);
+    head.castShadow=true;
+    human.add(head);
+    const hairCap=new THREE.Mesh(new THREE.SphereGeometry(.165,14,10,0,Math.PI*2,0,Math.PI*.55),hairMat);
+    hairCap.position.set(0,height*.985,-.01);
+    hairCap.castShadow=true;
+    human.add(hairCap);
+
+    const legs=[];
+    for(const side of [-1,1]){
+      const leg=new THREE.Group();
+      leg.position.set(side*.12,height*.43,0);
+      human.add(leg);
+      box(0,-height*.17,0,.16,height*.36,.17,trouserMat,leg);
+      box(0,-height*.36,.045,.18,.08,.31,blackMat,leg);
+      legs.push(leg);
+    }
+    const arms=[];
+    for(const side of [-1,1]){
+      const arm=new THREE.Group();
+      arm.position.set(side*.28,height*.80,0);
+      human.add(arm);
+      box(0,-height*.15,0,.12,height*.31,.13,shirtMat,arm);
+      arms.push(arm);
+    }
+    scene.add(human);
+    human.userData.legs=legs;
+    human.userData.arms=arms;
+    human.userData.walkPhase=0;
+    human.userData.routeIndex=0;
+    return human;
+  }
+
+  const man=makeHuman({shirt:0x496f91,trousers:0x34373b,hair:0x493226,height:1.83});
+  const woman=makeHuman({shirt:0x8e4d61,trousers:0x2f3135,hair:0x8a3f35,height:1.67});
+  man.position.set(-.5,0,.2);
+  woman.position.set(3.6,0,5.8);
+
+  man.userData.route=[
+    new THREE.Vector3(-.5,0,.2),new THREE.Vector3(2.4,0,.3),
+    new THREE.Vector3(2.5,0,4.8),new THREE.Vector3(-.8,0,5.2),
+    new THREE.Vector3(-.4,0,1.2)
+  ];
+  woman.userData.route=[
+    new THREE.Vector3(3.6,0,5.8),new THREE.Vector3(6.6,0,5.4),
+    new THREE.Vector3(6.4,0,1.0),new THREE.Vector3(3.0,0,1.0),
+    new THREE.Vector3(1.6,0,4.2)
+  ];
+
+  function updateHuman(h,dt){
+    const route=h.userData.route;
+    const target=route[h.userData.routeIndex];
+    const dx=target.x-h.position.x,dz=target.z-h.position.z;
+    const dist=Math.hypot(dx,dz);
+    if(dist<.18){
+      h.userData.routeIndex=(h.userData.routeIndex+1)%route.length;
+      return;
+    }
+    const speed=.58;
+    const dirX=dx/dist,dirZ=dz/dist;
+    h.position.x+=dirX*speed*dt;
+    h.position.z+=dirZ*speed*dt;
+    const desired=Math.atan2(dirX,dirZ);
+    h.rotation.y+=Math.atan2(Math.sin(desired-h.rotation.y),Math.cos(desired-h.rotation.y))*Math.min(1,5*dt);
+    h.userData.walkPhase+=dt*5.8;
+    const swing=Math.sin(h.userData.walkPhase)*.46;
+    h.userData.legs[0].rotation.x=swing;
+    h.userData.legs[1].rotation.x=-swing;
+    h.userData.arms[0].rotation.x=-swing*.55;
+    h.userData.arms[1].rotation.x=swing*.55;
+  }
 
   // --- Cat model / life-stage rig ---
   const cat=new THREE.Group();
@@ -909,6 +1207,10 @@ try{
   let groomingSide=1;
   let nextGroomDelay=5;
   let purrUntil=0;
+  let bedInteractionAvailable=false;
+  let biscuitsActive=false;
+  let biscuitsTime=0;
+  let biscuitPurrRestarted=false;
   let customOpen=false;
   let settingsOpen=false;
   let savedCameraYaw=0;
@@ -916,6 +1218,7 @@ try{
   const customPanel=document.getElementById('customPanel');
   const customiseBtn=document.getElementById('customiseBtn');
   const customDone=document.getElementById('customDone');
+  const interactBtn=document.getElementById('interact');
 
   settingsBtn.addEventListener('pointerdown',()=>{
     if(!gameStarted)return;
@@ -933,6 +1236,12 @@ try{
     grooming=null;
     groomingTime=0;
     tongue.visible=false;
+  }
+
+  function stopBiscuits(){
+    biscuitsActive=false;
+    biscuitsTime=0;
+    biscuitPurrRestarted=false;
   }
 
   function markActive(){
@@ -1005,6 +1314,7 @@ try{
 
   function stickMove(e){
     if(!gameStarted||customOpen||settingsOpen)return;
+    if(biscuitsActive)stopBiscuits();
     markActive();
     const r=stick.getBoundingClientRect();
     const dx=e.clientX-(r.left+r.width/2);
@@ -1037,7 +1347,7 @@ try{
   stick.addEventListener('pointercancel',endStick);
 
   const runBtn=document.getElementById('run');
-  runBtn.addEventListener('pointerdown',e=>{e.preventDefault();if(!customOpen){markActive();runHeld=true}});
+  runBtn.addEventListener('pointerdown',e=>{e.preventDefault();if(!customOpen){if(biscuitsActive)stopBiscuits();markActive();runHeld=true}});
   ['pointerup','pointercancel','pointerleave'].forEach(x=>runBtn.addEventListener(x,()=>runHeld=false));
 
   // --- Immediate cat voice SFX ---
@@ -1130,8 +1440,34 @@ try{
     playPurr();
   });
 
+  function startBiscuits(){
+    if(!bedInteractionAvailable||customOpen||settingsOpen)return;
+    markActive();
+    biscuitsActive=true;
+    biscuitsTime=0;
+    biscuitPurrRestarted=false;
+    move.x=move.y=0;
+    currentSpeed=0;
+    runHeld=false;
+    // Centre the cat comfortably on the cushion.
+    cat.position.x=catBedPos.x;
+    cat.position.z=catBedPos.z+.08;
+    cat.position.y=CAT_BED_TOP;
+    cat.rotation.y=Math.PI;
+    vy=0;
+    onGround=true;
+    playPurr();
+  }
+
+  interactBtn.addEventListener('pointerdown',e=>{
+    e.preventDefault();
+    e.stopPropagation();
+    startBiscuits();
+  });
+
   document.getElementById('jump').addEventListener('pointerdown',e=>{e.preventDefault();
     if(gameStarted && !customOpen && !settingsOpen && onGround && lifeStage!=='Newborn'){
+      if(biscuitsActive)stopBiscuits();
       markActive();
       // Kittens start with a smaller hop and gain jump strength as they mature.
       const jumpStrength=mix(2.85,3.95,ageAdultness)*(lifeStage==='Senior'?.86:1);
@@ -1143,6 +1479,7 @@ try{
   let lookId=null,lastX=0;
   renderer.domElement.addEventListener('pointerdown',e=>{
     if(!gameStarted||customOpen||settingsOpen)return;
+    if(biscuitsActive)stopBiscuits();
     markActive();
     lookId=e.pointerId;
     lastX=e.clientX;
@@ -1178,7 +1515,7 @@ try{
     updateGrowth();
 
     const inputMag=Math.min(1,Math.hypot(move.x,move.y));
-    const moving=gameStarted && !customOpen && !settingsOpen && inputMag>.06;
+    const moving=gameStarted && !customOpen && !settingsOpen && !biscuitsActive && inputMag>.06;
 
     let desiredSpeed=0;
     if(moving && lifeStage!=='Newborn'){
@@ -1208,6 +1545,9 @@ try{
     if(currentSpeed<desiredSpeed)currentSpeed=Math.min(desiredSpeed,currentSpeed+speedStep);
     else currentSpeed=Math.max(desiredSpeed,currentSpeed-speedStep);
 
+    const previousX=cat.position.x;
+    const previousZ=cat.position.z;
+
     if(moving){
       const forward=-move.y;
       const right=-move.x;
@@ -1221,17 +1561,32 @@ try{
       cat.position.z+=Math.cos(desiredAngle)*currentSpeed*dt;
     }
 
-    cat.position.x=Math.max(-7.3,Math.min(7.3,cat.position.x));
-    cat.position.z=Math.max(-7.3,Math.min(7.3,cat.position.z));
+    cat.position.x=Math.max(-8.65,Math.min(8.65,cat.position.x));
+    cat.position.z=Math.max(-8.15,Math.min(8.15,cat.position.z));
+    resolveHouseCollision(previousX,previousZ);
 
-    // Jump / gravity. Very young cats have a softer, shorter arc.
+    // Jump / gravity with real furniture/platform landing.
     const gravity=mix(8.1,8.9,ageAdultness);
-    vy-=gravity*dt;
-    cat.position.y+=vy*dt;
-    if(cat.position.y<=0){
-      cat.position.y=0;
-      vy=0;
-      onGround=true;
+    const previousY=cat.position.y;
+    if(!biscuitsActive){
+      vy-=gravity*dt;
+      cat.position.y+=vy*dt;
+      if(vy<=0){
+        const support=landingSurfaceHeight(cat.position.x,cat.position.z,previousY,cat.position.y);
+        if(cat.position.y<=support+.025 && previousY>=support-.035){
+          cat.position.y=support;
+          vy=0;
+          onGround=true;
+        }else if(cat.position.y<=0){
+          cat.position.y=0;
+          vy=0;
+          onGround=true;
+        }else{
+          onGround=false;
+        }
+      }else{
+        onGround=false;
+      }
     }
 
     // Feline locomotion: paws plant, limbs fold at the joints, and the whole
@@ -1375,7 +1730,7 @@ try{
     // --- Idle grooming ---
     // After five seconds with no movement/input, pick a different cat grooming
     // behaviour at random. Any player activity immediately interrupts it.
-    const genuinelyIdle=!customOpen && !settingsOpen && onGround && currentSpeed<.035 && !moving;
+    const genuinelyIdle=!customOpen && !settingsOpen && !biscuitsActive && onGround && currentSpeed<.035 && !moving;
     if(genuinelyIdle){
       idleSeconds+=dt;
     }else{
@@ -1528,6 +1883,54 @@ try{
       }
     }
 
+    // --- Cat bed / biscuit making ---
+    const bedDistance=Math.hypot(cat.position.x-catBedPos.x,cat.position.z-catBedPos.z);
+    bedInteractionAvailable=
+      gameStarted && !customOpen && !settingsOpen && !biscuitsActive &&
+      bedDistance<1.05 && Math.abs(cat.position.y-CAT_BED_TOP)<.34;
+
+    interactBtn.style.display=bedInteractionAvailable?'block':'none';
+
+    if(biscuitsActive){
+      biscuitsTime+=dt;
+      const knead=Math.sin(biscuitsTime*8.2);
+      const leftPress=Math.max(0,knead);
+      const rightPress=Math.max(0,-knead);
+
+      // Lower into the soft bed and alternate the front paws.
+      cat.position.y=CAT_BED_TOP;
+      torso.position.y+=(.475-torso.position.y)*Math.min(1,9*dt);
+      shoulders.position.y+=(.495-shoulders.position.y)*Math.min(1,10*dt);
+      haunches.position.y+=(.50-haunches.position.y)*Math.min(1,8*dt);
+      head.position.y+=(.75-head.position.y)*Math.min(1,8*dt);
+      head.rotation.x+=(-.12-head.rotation.x)*Math.min(1,8*dt);
+
+      const lf=legs[0],rf=legs[1];
+      lf.position.z+=(.46-lf.position.z)*Math.min(1,12*dt);
+      rf.position.z+=(.46-rf.position.z)*Math.min(1,12*dt);
+      lf.position.y+=(.42-leftPress*.038-lf.position.y)*Math.min(1,18*dt);
+      rf.position.y+=(.42-rightPress*.038-rf.position.y)*Math.min(1,18*dt);
+      lf.rotation.x+=(-.48+leftPress*.18-lf.rotation.x)*Math.min(1,16*dt);
+      rf.rotation.x+=(-.48+rightPress*.18-rf.rotation.x)*Math.min(1,16*dt);
+      lf.userData.lower.rotation.x+=(-.38-leftPress*.20-lf.userData.lower.rotation.x)*Math.min(1,18*dt);
+      rf.userData.lower.rotation.x+=(-.38-rightPress*.20-rf.userData.lower.rotation.x)*Math.min(1,18*dt);
+      lf.userData.paw.position.y+=((lf.userData.basePawY-leftPress*.028)-lf.userData.paw.position.y)*Math.min(1,20*dt);
+      rf.userData.paw.position.y+=((rf.userData.basePawY-rightPress*.028)-rf.userData.paw.position.y)*Math.min(1,20*dt);
+
+      // Soft body rocking is what makes kneading look like actual weight transfer.
+      shoulders.rotation.z+=(knead*.032-shoulders.rotation.z)*Math.min(1,14*dt);
+      catRig.rotation.z+=(knead*.012-catRig.rotation.z)*Math.min(1,12*dt);
+
+      if(biscuitsTime>3.25&&!biscuitPurrRestarted){
+        biscuitPurrRestarted=true;
+        playPurr();
+      }
+      if(biscuitsTime>6.2){
+        stopBiscuits();
+        markActive();
+      }
+    }
+
     // Upright, expressive tail with a travelling sway from base to tip.
     const t=performance.now()*.001;
     idlePhase+=dt;
@@ -1570,6 +1973,31 @@ try{
     mouth.scale.y+=( (meowing?.72:.16)-mouth.scale.y )*Math.min(1,18*dt);
     mouth.position.y+=( (meowing?-.157:-.145)-mouth.position.y )*Math.min(1,18*dt);
 
+    // Pushable cat toys.
+    for(const toy of toyBalls){
+      const dx=toy.mesh.position.x-cat.position.x;
+      const dz=toy.mesh.position.z-cat.position.z;
+      const d=Math.hypot(dx,dz)||1;
+      if(d<.38 && currentSpeed>.12){
+        toy.vx+=(dx/d)*currentSpeed*.42;
+        toy.vz+=(dz/d)*currentSpeed*.42;
+      }
+      toy.mesh.position.x+=toy.vx*dt;
+      toy.mesh.position.z+=toy.vz*dt;
+      toy.vx*=Math.pow(.08,dt);
+      toy.vz*=Math.pow(.08,dt);
+      toy.mesh.rotation.z-=toy.vx*dt/toy.r;
+      toy.mesh.rotation.x+=toy.vz*dt/toy.r;
+      toy.mesh.position.x=Math.max(-8.4,Math.min(8.4,toy.mesh.position.x));
+      toy.mesh.position.z=Math.max(-7.9,Math.min(7.9,toy.mesh.position.z));
+    }
+
+    // Placeholder household residents continue their routines independently.
+    if(gameStarted&&!settingsOpen&&!customOpen){
+      updateHuman(man,dt);
+      updateHuman(woman,dt);
+    }
+
     // Cat-height camera. Customisation brings it closer for a live preview.
     const targetHeight=mix(.36,.64,ageAdultness);
     const target=cat.position.clone().add(new THREE.Vector3(0,targetHeight,0));
@@ -1587,6 +2015,8 @@ try{
     camera.lookAt(target);
 
     if(!gameStarted)status.textContent='Press to start';
+    else if(biscuitsActive)status.textContent='Cat Bed • Making biscuits • Purring';
+    else if(bedInteractionAvailable)status.textContent='Cat Bed • Make Biscuits';
     else if(customOpen)status.textContent='Customising kitten';
     else if(performance.now()<meowMouthUntil)status.textContent='Test Room • Meow!';
     else if(performance.now()<purrUntil)status.textContent='Test Room • Purring';
