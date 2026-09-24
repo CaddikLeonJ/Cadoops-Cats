@@ -1259,7 +1259,8 @@ try{
         // Fold toward the belly/hind-leg area.
         head.rotation.x+=(-.72+lick*.07-head.rotation.x)*Math.min(1,9*dt);
         head.rotation.y+=(groomingSide*.38-head.rotation.y)*Math.min(1,9*dt);
-        hindLeg.rotation.x+=(groomingSide<0?.50:-.50-hindLeg.rotation.x)*Math.min(1,8*dt);
+        const hindTarget=groomingSide<0?.50:-.50;
+        hindLeg.rotation.x+=(hindTarget-hindLeg.rotation.x)*Math.min(1,8*dt);
         haunches.rotation.x+=(-.12-haunches.rotation.x)*Math.min(1,8*dt);
       }else if(grooming==='frontPaw'){
         frontLeg.rotation.x+=(-.78-frontLeg.rotation.x)*Math.min(1,10*dt);
