@@ -21,7 +21,13 @@ button{appearance:none;-webkit-appearance:none}
 #meow{right:24px;bottom:max(122px,calc(env(safe-area-inset-bottom) + 122px));width:70px;height:70px;font-size:12px}
 #purr{right:106px;bottom:max(126px,calc(env(safe-area-inset-bottom) + 126px));width:62px;height:62px;font-size:11px}
 #swipe{right:184px;bottom:max(44px,calc(env(safe-area-inset-bottom) + 44px));width:60px;height:60px;font-size:10px}
-#interact{display:none;pointer-events:auto;position:absolute;right:14px;top:max(54px,calc(env(safe-area-inset-top) + 40px));left:auto;bottom:auto;min-width:116px;height:40px;border:2px solid #5b3829;border-radius:10px;padding:0 12px;background:#f4d7a5;color:#4a2e22;font-size:10px;font-weight:900;letter-spacing:.25px;box-shadow:0 4px 12px #0004;text-shadow:none;white-space:nowrap;transform:none}
+#contextActions{position:absolute;right:14px;top:max(54px,calc(env(safe-area-inset-top) + 40px));display:flex;flex-direction:column;align-items:flex-end;gap:7px;pointer-events:none}
+.contextAction{display:none;pointer-events:auto;position:relative;min-width:108px;height:38px;border:2px solid #5b3829;border-radius:10px;padding:0 12px;background:#f4d7a5;color:#4a2e22;font-size:10px;font-weight:900;letter-spacing:.25px;box-shadow:0 4px 12px #0004;text-shadow:none;white-space:nowrap;touch-action:manipulation}
+#interact{background:#f4d7a5}
+#eatBtn{background:#d8b77b}
+#drinkBtn{background:#a8d7e7;border-color:#315f72;color:#234552}
+#poopBtn{background:#bb906d;border-color:#654734;color:#3d2a20}
+#peeBtn{background:#eadb78;border-color:#75651f;color:#4d4317}
 #hint{position:absolute;bottom:max(202px,calc(env(safe-area-inset-bottom) + 202px));right:20px;font-size:12px;opacity:.85}
 #customiseBtn{pointer-events:auto;position:absolute;left:16px;top:max(82px,calc(env(safe-area-inset-top) + 68px));border:0;border-radius:14px;padding:10px 14px;background:#ffffffd9;color:#222;font-weight:800;font-size:12px;box-shadow:0 3px 10px #0004;touch-action:manipulation}
 #musicBtn{pointer-events:auto;position:absolute;left:16px;top:max(128px,calc(env(safe-area-inset-top) + 114px));border:0;border-radius:14px;padding:9px 12px;background:#ffffffc9;color:#222;font-weight:800;font-size:11px;box-shadow:0 3px 10px #0004;touch-action:manipulation}
@@ -71,7 +77,7 @@ button{appearance:none;-webkit-appearance:none}
 </div>
 
 <div id="hud">
-  <div id="brand">Cadoops' Cats<div id="ver">Prototype v0.3.0</div><div id="age">Kitten • 10 weeks</div></div>
+  <div id="brand">Cadoops' Cats<div id="ver">Prototype v0.4.0</div><div id="age">Kitten • 10 weeks</div></div>
   <div id="status">Loading 3D world…</div>
   <div id="stick"><div id="knob"></div></div>
   <button class="btn" id="jump">JUMP</button>
@@ -79,7 +85,13 @@ button{appearance:none;-webkit-appearance:none}
   <button class="btn" id="meow">MEOW</button>
   <button class="btn" id="purr">PURR</button>
   <button class="btn" id="swipe">SWIPE</button>
-  <button id="interact">MAKE BISCUITS</button>
+  <div id="contextActions">
+    <button class="contextAction" id="interact">MAKE BISCUITS</button>
+    <button class="contextAction" id="eatBtn">EAT</button>
+    <button class="contextAction" id="drinkBtn">DRINK</button>
+    <button class="contextAction" id="poopBtn">POOP</button>
+    <button class="contextAction" id="peeBtn">PEE</button>
+  </div>
   <button id="customiseBtn">CUSTOMISE</button>
   <button id="musicBtn">MUSIC: ON</button>
   <button id="settingsBtn">SETTINGS</button>
@@ -648,6 +660,86 @@ try{
   solidBox(4.15,.28,-7.05,.88,.56,.72,darkWoodMat,{climbable:true,name:'bedside table'});
   solidBox(8.05,.28,-7.05,.88,.56,.72,darkWoodMat,{climbable:true,name:'bedside table'});
 
+  // ---------------- Kitchen cat bowls ----------------
+  const bowlMetalMat=new THREE.MeshStandardMaterial({color:0xb5b9ba,roughness:.38,metalness:.55});
+  const foodMat=new THREE.MeshStandardMaterial({color:0x8a5636,roughness:.98});
+  const waterMat=new THREE.MeshStandardMaterial({color:0x82c8e6,roughness:.18,transparent:true,opacity:.78});
+  const foodBowlPos=new THREE.Vector3(-3.25,0,-5.70);
+  const waterBowlPos=new THREE.Vector3(-3.25,0,-4.92);
+
+  function makePetBowl(pos,contentMat){
+    const g=new THREE.Group();
+    g.position.copy(pos);
+    scene.add(g);
+    const base=new THREE.Mesh(new THREE.CylinderGeometry(.34,.38,.11,24),bowlMetalMat);
+    base.position.y=.055;
+    base.castShadow=base.receiveShadow=true;
+    g.add(base);
+    const rim=new THREE.Mesh(new THREE.TorusGeometry(.31,.045,8,24),bowlMetalMat);
+    rim.rotation.x=Math.PI/2;
+    rim.position.y=.12;
+    rim.castShadow=true;
+    g.add(rim);
+    const content=new THREE.Mesh(new THREE.CylinderGeometry(.275,.275,.035,24),contentMat);
+    content.position.y=.115;
+    content.castShadow=content.receiveShadow=true;
+    g.add(content);
+    return {group:g,content};
+  }
+  const foodBowl=makePetBowl(foodBowlPos,foodMat);
+  const waterBowl=makePetBowl(waterBowlPos,waterMat);
+
+  // ---------------- Bathroom ----------------
+  const bathroomFloorMat=new THREE.MeshStandardMaterial({color:0xd7e0df,roughness:.78});
+  const bathroomFloor=new THREE.Mesh(new THREE.PlaneGeometry(3.2,2.5),bathroomFloorMat);
+  bathroomFloor.rotation.x=-Math.PI/2;
+  bathroomFloor.position.set(6.65,.014,.25);
+  bathroomFloor.receiveShadow=true;
+  scene.add(bathroomFloor);
+
+  // Three walls, with the south side left open as the doorway.
+  solidBox(6.65,1.45,-1.03,3.2,2.9,.16,wallMat,{name:'bathroom north wall'});
+  solidBox(5.05,1.45,.25,.16,2.9,2.55,wallMat,{name:'bathroom west wall'});
+  solidBox(8.25,1.45,.25,.16,2.9,2.55,wallMat,{name:'bathroom east wall'});
+
+  // Simple bathroom fixtures.
+  const porcelainMat=new THREE.MeshStandardMaterial({color:0xf1f1ed,roughness:.58});
+  cylinder(5.70,.22,-.35,.34,.44,porcelainMat);
+  box(5.70,.66,-.55,.56,.52,.20,porcelainMat);
+  solidBox(7.65,.38,-.48,.78,.76,.46,porcelainMat,{climbable:true,name:'bathroom sink'});
+  box(7.65,.83,-.66,.65,.08,.18,metalMat);
+
+  // Litter tray, intentionally low/non-solid so it cannot trap the player.
+  const litterPos=new THREE.Vector3(6.75,0,.83);
+  const litterGroup=new THREE.Group();
+  litterGroup.position.copy(litterPos);
+  scene.add(litterGroup);
+  const trayMat=new THREE.MeshStandardMaterial({color:0x5d7180,roughness:.90});
+  const litterMat=new THREE.MeshStandardMaterial({color:0xcdbb96,roughness:1});
+  const trayBase=new THREE.Mesh(new THREE.BoxGeometry(1.05,.12,.78),trayMat);
+  trayBase.position.y=.06;
+  trayBase.castShadow=trayBase.receiveShadow=true;
+  litterGroup.add(trayBase);
+  const litterSand=new THREE.Mesh(new THREE.BoxGeometry(.91,.055,.64),litterMat);
+  litterSand.position.y=.135;
+  litterSand.receiveShadow=true;
+  litterGroup.add(litterSand);
+
+  // Needs/litter simulation state.
+  const catNeeds={
+    foodLevel:1,
+    waterLevel:1,
+    gutLoad:.18,
+    bladderLoad:.12,
+    foodEatenSincePoop:.18,
+    waterDrunkSincePee:.12
+  };
+  const litterWaste=[];
+  let litterDirty=false;
+  let refillFoodRequested=false;
+  let refillWaterRequested=false;
+  let litterCleanRequested=false;
+
   // ---------------- Cat zone ----------------
   const catBedPos=new THREE.Vector3(5.2,0,2.85);
   const catBedGroup=new THREE.Group();
@@ -744,6 +836,8 @@ try{
     human.userData.knockVX=0;
     human.userData.knockVZ=0;
     human.userData.hurtLean=0;
+    human.userData.task=null;
+    human.userData.taskTimer=0;
     return human;
   }
 
@@ -770,6 +864,35 @@ try{
     new THREE.Vector3(4.7,0,-.4)
   ];
 
+  function nearestAvailableHuman(target){
+    let best=null,bestDist=Infinity;
+    for(const h of [man,woman,teen]){
+      if(h.userData.task)continue;
+      const d=Math.hypot(h.position.x-target.x,h.position.z-target.z);
+      if(d<bestDist){best=h;bestDist=d}
+    }
+    return best;
+  }
+
+  function assignHouseholdTask(type,target){
+    const h=nearestAvailableHuman(target);
+    if(!h)return false;
+    h.userData.task={type,x:target.x,z:target.z};
+    h.userData.taskTimer=0;
+    return true;
+  }
+
+  function clearLitterWaste(){
+    for(const waste of litterWaste){
+      for(const m of waste.meshes||[]){
+        if(m.parent)m.parent.remove(m);
+      }
+    }
+    litterWaste.length=0;
+    litterDirty=false;
+    litterCleanRequested=false;
+  }
+
   function updateHuman(h,dt){
     const now=performance.now();
 
@@ -790,6 +913,46 @@ try{
 
     h.userData.hurtLean+=(0-h.userData.hurtLean)*Math.min(1,8*dt);
     h.rotation.z=h.userData.hurtLean;
+
+    if(h.userData.task){
+      const task=h.userData.task;
+      const dx=task.x-h.position.x,dz=task.z-h.position.z;
+      const dist=Math.hypot(dx,dz);
+
+      if(dist>.42){
+        const dirX=dx/(dist||1),dirZ=dz/(dist||1);
+        h.position.x+=dirX*.66*dt;
+        h.position.z+=dirZ*.66*dt;
+        const desired=Math.atan2(dirX,dirZ);
+        h.rotation.y+=Math.atan2(Math.sin(desired-h.rotation.y),Math.cos(desired-h.rotation.y))*Math.min(1,6*dt);
+        h.userData.walkPhase+=dt*6.2;
+        const swing=Math.sin(h.userData.walkPhase)*.48;
+        h.userData.legs[0].rotation.x=swing;
+        h.userData.legs[1].rotation.x=-swing;
+        h.userData.arms[0].rotation.x=-swing*.5;
+        h.userData.arms[1].rotation.x=swing*.5;
+      }else{
+        h.userData.taskTimer+=dt;
+        const work=Math.sin(h.userData.taskTimer*6)*.22;
+        h.userData.arms[0].rotation.x+=(-.75+work-h.userData.arms[0].rotation.x)*Math.min(1,10*dt);
+        h.userData.arms[1].rotation.x+=(-.75-work-h.userData.arms[1].rotation.x)*Math.min(1,10*dt);
+
+        if(h.userData.taskTimer>1.8){
+          if(task.type==='refillFood'){
+            catNeeds.foodLevel=1;
+            refillFoodRequested=false;
+          }else if(task.type==='refillWater'){
+            catNeeds.waterLevel=1;
+            refillWaterRequested=false;
+          }else if(task.type==='cleanLitter'){
+            clearLitterWaste();
+          }
+          h.userData.task=null;
+          h.userData.taskTimer=0;
+        }
+      }
+      return;
+    }
 
     const route=h.userData.route;
     const target=route[h.userData.routeIndex];
@@ -1376,6 +1539,9 @@ try{
   let biscuitsActive=false;
   let biscuitsTime=0;
   let biscuitPurrRestarted=false;
+  let careAction=null;
+  let careActionTime=0;
+  let careActionDuration=0;
   let customOpen=false;
   let settingsOpen=false;
   let savedCameraYaw=0;
@@ -1384,6 +1550,10 @@ try{
   const customiseBtn=document.getElementById('customiseBtn');
   const customDone=document.getElementById('customDone');
   const interactBtn=document.getElementById('interact');
+  const eatBtn=document.getElementById('eatBtn');
+  const drinkBtn=document.getElementById('drinkBtn');
+  const poopBtn=document.getElementById('poopBtn');
+  const peeBtn=document.getElementById('peeBtn');
   const swipeBtn=document.getElementById('swipe');
 
   settingsBtn.addEventListener('pointerdown',()=>{
@@ -1408,6 +1578,13 @@ try{
     biscuitsActive=false;
     biscuitsTime=0;
     biscuitPurrRestarted=false;
+  }
+
+  function stopCareAction(){
+    careAction=null;
+    careActionTime=0;
+    careActionDuration=0;
+    tongue.visible=false;
   }
 
   function markActive(){
@@ -1635,6 +1812,7 @@ try{
   function stickMove(e){
     if(!gameStarted||customOpen||settingsOpen||climbing)return;
     if(biscuitsActive)stopBiscuits();
+    if(careAction)stopCareAction();
     markActive();
     const r=stick.getBoundingClientRect();
     const dx=e.clientX-(r.left+r.width/2);
@@ -1667,7 +1845,7 @@ try{
   stick.addEventListener('pointercancel',endStick);
 
   const runBtn=document.getElementById('run');
-  runBtn.addEventListener('pointerdown',e=>{e.preventDefault();if(!customOpen){if(biscuitsActive)stopBiscuits();markActive();runHeld=true}});
+  runBtn.addEventListener('pointerdown',e=>{e.preventDefault();if(!customOpen){if(biscuitsActive)stopBiscuits();if(careAction)stopCareAction();markActive();runHeld=true}});
   ['pointerup','pointercancel','pointerleave'].forEach(x=>runBtn.addEventListener(x,()=>runHeld=false));
 
   // --- Immediate cat voice SFX ---
@@ -1863,6 +2041,7 @@ try{
   document.getElementById('jump').addEventListener('pointerdown',e=>{e.preventDefault();
     if(gameStarted && !customOpen && !settingsOpen && !climbing && onGround && lifeStage!=='Newborn'){
       if(biscuitsActive)stopBiscuits();
+      if(careAction)stopCareAction();
       markActive();
       // Kittens start with a smaller hop and gain jump strength as they mature.
       const jumpStrength=mix(2.85,3.95,ageAdultness)*(lifeStage==='Senior'?.86:1);
@@ -1875,6 +2054,7 @@ try{
   renderer.domElement.addEventListener('pointerdown',e=>{
     if(!gameStarted||customOpen||settingsOpen||climbing)return;
     if(biscuitsActive)stopBiscuits();
+    if(careAction)stopCareAction();
     markActive();
     lookId=e.pointerId;
     lastX=e.clientX;
