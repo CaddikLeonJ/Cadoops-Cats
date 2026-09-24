@@ -1322,7 +1322,8 @@ try{
       // The pelvis drives more strongly during the run.
       shoulders.position.z=.34-strideWave*(running?.026:.008)*gait;
       haunches.position.z=-.32+strideWave*(running?.040:.010)*gait;
-      haunches.rotation.x+=(running?(-Math.max(0,strideWave)*.10):0-haunches.rotation.x)*Math.min(1,12*dt);
+      const haunchPitch=running ? -Math.max(0,strideWave)*.10 : 0;
+      haunches.rotation.x+=(haunchPitch-haunches.rotation.x)*Math.min(1,12*dt);
 
       neck.rotation.x+=(Math.sin(movePhase*2+.35)*.026*gait-neck.rotation.x)*Math.min(1,13*dt);
       head.position.y=(lifeStage==='Senior'?.765:.79)+shoulderWave*bounce*.42;
