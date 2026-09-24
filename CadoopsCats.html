@@ -12,7 +12,7 @@ button{appearance:none;-webkit-appearance:none}
 #hud{position:fixed;inset:0;pointer-events:none;color:white;text-shadow:0 2px 4px #0008}
 #brand{position:absolute;top:max(14px,env(safe-area-inset-top));left:16px;font-weight:800;font-size:20px}
 #ver{font-size:12px;opacity:.8;margin-top:2px}#age{font-size:12px;opacity:.9;margin-top:3px}
-#status{position:absolute;top:max(14px,env(safe-area-inset-top));right:16px;font-size:13px}
+#status{position:absolute;top:max(14px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);font-size:13px;text-align:center;white-space:nowrap;max-width:46vw;overflow:hidden;text-overflow:ellipsis}
 #stick{pointer-events:auto;position:absolute;left:24px;bottom:max(28px,env(safe-area-inset-bottom));width:118px;height:118px;border-radius:50%;background:#ffffff28;border:2px solid #ffffff55}
 #knob{position:absolute;left:34px;top:34px;width:50px;height:50px;border-radius:50%;background:#ffffffaa}
 .btn{pointer-events:auto;position:absolute;border:0;border-radius:50%;background:#ffffffaa;color:#222;font-weight:800;box-shadow:0 3px 10px #0004}
@@ -20,7 +20,8 @@ button{appearance:none;-webkit-appearance:none}
 #run{right:116px;bottom:max(42px,env(safe-area-inset-bottom));width:62px;height:62px}
 #meow{right:24px;bottom:max(122px,calc(env(safe-area-inset-bottom) + 122px));width:70px;height:70px;font-size:12px}
 #purr{right:106px;bottom:max(126px,calc(env(safe-area-inset-bottom) + 126px));width:62px;height:62px;font-size:11px}
-#interact{display:none;left:24px;bottom:max(158px,calc(env(safe-area-inset-bottom) + 158px));width:auto;min-width:108px;height:38px;border-radius:13px;padding:0 12px;font-size:10px;white-space:nowrap;transform:none}
+#swipe{right:184px;bottom:max(44px,calc(env(safe-area-inset-bottom) + 44px));width:60px;height:60px;font-size:10px}
+#interact{display:none;pointer-events:auto;position:absolute;right:14px;top:max(54px,calc(env(safe-area-inset-top) + 40px));left:auto;bottom:auto;min-width:116px;height:40px;border:2px solid #5b3829;border-radius:10px;padding:0 12px;background:#f4d7a5;color:#4a2e22;font-size:10px;font-weight:900;letter-spacing:.25px;box-shadow:0 4px 12px #0004;text-shadow:none;white-space:nowrap;transform:none}
 #hint{position:absolute;bottom:max(202px,calc(env(safe-area-inset-bottom) + 202px));right:20px;font-size:12px;opacity:.85}
 #customiseBtn{pointer-events:auto;position:absolute;left:16px;top:max(82px,calc(env(safe-area-inset-top) + 68px));border:0;border-radius:14px;padding:10px 14px;background:#ffffffd9;color:#222;font-weight:800;font-size:12px;box-shadow:0 3px 10px #0004;touch-action:manipulation}
 #musicBtn{pointer-events:auto;position:absolute;left:16px;top:max(128px,calc(env(safe-area-inset-top) + 114px));border:0;border-radius:14px;padding:9px 12px;background:#ffffffc9;color:#222;font-weight:800;font-size:11px;box-shadow:0 3px 10px #0004;touch-action:manipulation}
@@ -65,14 +66,15 @@ button{appearance:none;-webkit-appearance:none}
 </div>
 
 <div id="hud">
-  <div id="brand">Cadoops' Cats<div id="ver">Prototype v0.2.1</div><div id="age">Kitten • 10 weeks</div></div>
+  <div id="brand">Cadoops' Cats<div id="ver">Prototype v0.2.2</div><div id="age">Kitten • 10 weeks</div></div>
   <div id="status">Loading 3D world…</div>
   <div id="stick"><div id="knob"></div></div>
   <button class="btn" id="jump">JUMP</button>
   <button class="btn" id="run">RUN</button>
   <button class="btn" id="meow">MEOW</button>
   <button class="btn" id="purr">PURR</button>
-  <button class="btn" id="interact">MAKE BISCUITS</button>
+  <button class="btn" id="swipe">SWIPE</button>
+  <button id="interact">MAKE BISCUITS</button>
   <button id="customiseBtn">CUSTOMISE</button>
   <button id="musicBtn">MUSIC: ON</button>
   <button id="settingsBtn">SETTINGS</button>
@@ -697,6 +699,11 @@ try{
     human.userData.arms=arms;
     human.userData.walkPhase=0;
     human.userData.routeIndex=0;
+    human.userData.health=100;
+    human.userData.hurtUntil=0;
+    human.userData.knockVX=0;
+    human.userData.knockVZ=0;
+    human.userData.hurtLean=0;
     return human;
   }
 
@@ -717,6 +724,26 @@ try{
   ];
 
   function updateHuman(h,dt){
+    const now=performance.now();
+
+    // Swipe hit reaction: stagger backwards, lean away and throw the arms up.
+    if(now<h.userData.hurtUntil){
+      h.position.x+=h.userData.knockVX*dt;
+      h.position.z+=h.userData.knockVZ*dt;
+      h.userData.knockVX*=Math.pow(.06,dt);
+      h.userData.knockVZ*=Math.pow(.06,dt);
+      h.userData.hurtLean+=( -.24-h.userData.hurtLean )*Math.min(1,10*dt);
+      h.rotation.z=h.userData.hurtLean;
+      h.userData.arms[0].rotation.x+=(-1.05-h.userData.arms[0].rotation.x)*Math.min(1,12*dt);
+      h.userData.arms[1].rotation.x+=( .82-h.userData.arms[1].rotation.x)*Math.min(1,12*dt);
+      h.userData.legs[0].rotation.x*=Math.max(0,1-8*dt);
+      h.userData.legs[1].rotation.x*=Math.max(0,1-8*dt);
+      return;
+    }
+
+    h.userData.hurtLean+=(0-h.userData.hurtLean)*Math.min(1,8*dt);
+    h.rotation.z=h.userData.hurtLean;
+
     const route=h.userData.route;
     const target=route[h.userData.routeIndex];
     const dx=target.x-h.position.x,dz=target.z-h.position.z;
@@ -1275,6 +1302,12 @@ try{
   let groomingSide=1;
   let nextGroomDelay=5;
   let purrUntil=0;
+  let swipeActive=false;
+  let swipeTime=0;
+  let swipePaw=-1;
+  let lastSwipePaw=1;
+  let swipeAngleVariation=0;
+  let swipeStrength=1;
   let bedInteractionAvailable=false;
   let biscuitsActive=false;
   let biscuitsTime=0;
@@ -1287,6 +1320,7 @@ try{
   const customiseBtn=document.getElementById('customiseBtn');
   const customDone=document.getElementById('customDone');
   const interactBtn=document.getElementById('interact');
+  const swipeBtn=document.getElementById('swipe');
 
   settingsBtn.addEventListener('pointerdown',()=>{
     if(!gameStarted)return;
@@ -1500,6 +1534,81 @@ try{
   meowBtn.addEventListener('pointerdown',e=>{
     e.preventDefault();
     playMeow();
+  });
+
+  function swipeWorldPoint(){
+    const forwardX=Math.sin(cat.rotation.y);
+    const forwardZ=Math.cos(cat.rotation.y);
+    const sideX=Math.cos(cat.rotation.y);
+    const sideZ=-Math.sin(cat.rotation.y);
+    const side=swipePaw;
+    return {
+      x:cat.position.x+forwardX*.43+sideX*side*.16,
+      z:cat.position.z+forwardZ*.43+sideZ*side*.16,
+      fx:forwardX,
+      fz:forwardZ,
+      sx:sideX*side,
+      sz:sideZ*side
+    };
+  }
+
+  function applySwipeHit(){
+    const p=swipeWorldPoint();
+    const angle=swipeAngleVariation;
+    const ca=Math.cos(angle),sa=Math.sin(angle);
+    const hitX=p.fx*ca+p.sx*sa;
+    const hitZ=p.fz*ca+p.sz*sa;
+    const power=swipeStrength;
+
+    // Smack nearby toy balls hard enough to send them skittering across the room.
+    for(const toy of toyBalls){
+      const dx=toy.mesh.position.x-p.x;
+      const dz=toy.mesh.position.z-p.z;
+      const d=Math.hypot(dx,dz);
+      if(d>.72)continue;
+      const dot=(dx*hitX+dz*hitZ)/(d||1);
+      if(dot<-.16)continue;
+      const sideKick=.35*swipePaw;
+      toy.vx+=hitX*(3.6*power)+p.sx*sideKick;
+      toy.vz+=hitZ*(3.6*power)+p.sz*sideKick;
+    }
+
+    // Placeholder humans can be swatted too: they lose health and stagger back.
+    for(const h of [man,woman]){
+      const dx=h.position.x-p.x;
+      const dz=h.position.z-p.z;
+      const d=Math.hypot(dx,dz);
+      if(d>1.0)continue;
+      const dot=(dx*hitX+dz*hitZ)/(d||1);
+      if(dot<-.10)continue;
+
+      h.userData.health=Math.max(0,h.userData.health-(7+Math.floor(Math.random()*7)));
+      h.userData.hurtUntil=performance.now()+620+Math.random()*220;
+      h.userData.knockVX=hitX*(.95*power)+p.sx*.25;
+      h.userData.knockVZ=hitZ*(.95*power)+p.sz*.25;
+      h.userData.hurtLean=-swipePaw*.18;
+    }
+  }
+
+  function startSwipe(){
+    if(!gameStarted||customOpen||settingsOpen||swipeActive)return;
+    if(biscuitsActive)stopBiscuits();
+    markActive();
+
+    // Always alternate paws, while angle and force vary slightly each press.
+    swipePaw=-lastSwipePaw;
+    lastSwipePaw=swipePaw;
+    swipeAngleVariation=(Math.random()-.5)*.42;
+    swipeStrength=.88+Math.random()*.34;
+    swipeActive=true;
+    swipeTime=0;
+    applySwipeHit();
+  }
+
+  swipeBtn.addEventListener('pointerdown',e=>{
+    e.preventDefault();
+    e.stopPropagation();
+    startSwipe();
   });
 
   const purrBtn=document.getElementById('purr');
@@ -1800,10 +1909,40 @@ try{
       }
     }
 
+    // --- Swipe animation ---
+    if(swipeActive){
+      swipeTime+=dt;
+      const duration=.34;
+      const u=Math.min(1,swipeTime/duration);
+      const strike=Math.sin(u*Math.PI);
+      const recover=Math.sin(Math.min(1,u*1.15)*Math.PI);
+      const pawIndex=swipePaw<0?0:1;
+      const pawLeg=legs[pawIndex];
+
+      // Lift from the shoulder, fold the foreleg and slash across the front of the body.
+      pawLeg.position.y+=(.56+strike*.13-pawLeg.position.y)*Math.min(1,24*dt);
+      pawLeg.position.z+=(.50+strike*.10-pawLeg.position.z)*Math.min(1,24*dt);
+      pawLeg.rotation.x+=(-.92+strike*.72-pawLeg.rotation.x)*Math.min(1,24*dt);
+      pawLeg.rotation.z+=(-swipePaw*(.12+strike*.78)-pawLeg.rotation.z)*Math.min(1,26*dt);
+      pawLeg.userData.upper.rotation.x+=(-.36+strike*.38-pawLeg.userData.upper.rotation.x)*Math.min(1,24*dt);
+      pawLeg.userData.lower.rotation.x+=(-.82+strike*.58-pawLeg.userData.lower.rotation.x)*Math.min(1,26*dt);
+      pawLeg.userData.paw.rotation.x+=(.42+strike*.36-pawLeg.userData.paw.rotation.x)*Math.min(1,28*dt);
+      pawLeg.userData.paw.rotation.z+=(swipePaw*strike*.70-pawLeg.userData.paw.rotation.z)*Math.min(1,28*dt);
+
+      shoulders.rotation.z+=(-swipePaw*strike*.10-shoulders.rotation.z)*Math.min(1,20*dt);
+      head.rotation.y+=(swipePaw*strike*.13-head.rotation.y)*Math.min(1,18*dt);
+      catRig.rotation.z+=(-swipePaw*strike*.035-catRig.rotation.z)*Math.min(1,18*dt);
+
+      if(u>=1){
+        swipeActive=false;
+        swipeTime=0;
+      }
+    }
+
     // --- Idle grooming ---
     // After five seconds with no movement/input, pick a different cat grooming
     // behaviour at random. Any player activity immediately interrupts it.
-    const genuinelyIdle=!customOpen && !settingsOpen && !biscuitsActive && onGround && currentSpeed<.035 && !moving;
+    const genuinelyIdle=!customOpen && !settingsOpen && !biscuitsActive && !swipeActive && onGround && currentSpeed<.035 && !moving;
     if(genuinelyIdle){
       idleSeconds+=dt;
     }else{
@@ -1959,7 +2098,7 @@ try{
     // --- Cat bed / biscuit making ---
     const bedDistance=Math.hypot(cat.position.x-catBedPos.x,cat.position.z-catBedPos.z);
     bedInteractionAvailable=
-      gameStarted && !customOpen && !settingsOpen && !biscuitsActive &&
+      gameStarted && !customOpen && !settingsOpen && !biscuitsActive && !swipeActive &&
       bedDistance<1.05 && Math.abs(cat.position.y-CAT_BED_TOP)<.34;
 
     interactBtn.style.display=bedInteractionAvailable?'block':'none';
@@ -2033,7 +2172,7 @@ try{
     }else{
       chest.scale.y+=(1.10-chest.scale.y)*Math.min(1,10*dt);
     }
-    if(!grooming){
+    if(!grooming&&!swipeActive){
       head.rotation.y=Math.sin(t*.72)*.055*idleCuriosity;
       if(currentSpeed<=.08)head.rotation.x=Math.sin(t*.91)*.025*idleCuriosity;
       head.rotation.z=Math.sin(movePhase)*.010*gait + Math.sin(t*.63)*.012*idleCuriosity;
@@ -2057,8 +2196,8 @@ try{
       }
       toy.mesh.position.x+=toy.vx*dt;
       toy.mesh.position.z+=toy.vz*dt;
-      toy.vx*=Math.pow(.08,dt);
-      toy.vz*=Math.pow(.08,dt);
+      toy.vx*=Math.pow(.12,dt);
+      toy.vz*=Math.pow(.12,dt);
       toy.mesh.rotation.z-=toy.vx*dt/toy.r;
       toy.mesh.rotation.x+=toy.vz*dt/toy.r;
       toy.mesh.position.x=Math.max(-8.4,Math.min(8.4,toy.mesh.position.x));
@@ -2090,6 +2229,7 @@ try{
     if(!gameStarted)status.textContent='Press to start';
     else if(biscuitsActive)status.textContent='Cat Bed • Making biscuits • Purring';
     else if(bedInteractionAvailable)status.textContent='Cat Bed • Make Biscuits';
+    else if(swipeActive)status.textContent='Test Room • Swipe!';
     else if(customOpen)status.textContent='Customising kitten';
     else if(performance.now()<meowMouthUntil)status.textContent='Test Room • Meow!';
     else if(performance.now()<purrUntil)status.textContent='Test Room • Purring';
