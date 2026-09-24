@@ -20,7 +20,7 @@ button{appearance:none;-webkit-appearance:none}
 #run{right:116px;bottom:max(42px,env(safe-area-inset-bottom));width:62px;height:62px}
 #meow{right:24px;bottom:max(122px,calc(env(safe-area-inset-bottom) + 122px));width:70px;height:70px;font-size:12px}
 #purr{right:106px;bottom:max(126px,calc(env(safe-area-inset-bottom) + 126px));width:62px;height:62px;font-size:11px}
-#interact{display:none;left:50%;transform:translateX(-50%);bottom:max(38px,calc(env(safe-area-inset-bottom) + 38px));width:auto;min-width:142px;height:54px;border-radius:18px;padding:0 18px;font-size:12px;white-space:nowrap}
+#interact{display:none;left:24px;bottom:max(158px,calc(env(safe-area-inset-bottom) + 158px));width:auto;min-width:108px;height:38px;border-radius:13px;padding:0 12px;font-size:10px;white-space:nowrap;transform:none}
 #hint{position:absolute;bottom:max(202px,calc(env(safe-area-inset-bottom) + 202px));right:20px;font-size:12px;opacity:.85}
 #customiseBtn{pointer-events:auto;position:absolute;left:16px;top:max(82px,calc(env(safe-area-inset-top) + 68px));border:0;border-radius:14px;padding:10px 14px;background:#ffffffd9;color:#222;font-weight:800;font-size:12px;box-shadow:0 3px 10px #0004;touch-action:manipulation}
 #musicBtn{pointer-events:auto;position:absolute;left:16px;top:max(128px,calc(env(safe-area-inset-top) + 114px));border:0;border-radius:14px;padding:9px 12px;background:#ffffffc9;color:#222;font-weight:800;font-size:11px;box-shadow:0 3px 10px #0004;touch-action:manipulation}
@@ -65,7 +65,7 @@ button{appearance:none;-webkit-appearance:none}
 </div>
 
 <div id="hud">
-  <div id="brand">Cadoops' Cats<div id="ver">Prototype v0.2.0</div><div id="age">Kitten • 10 weeks</div></div>
+  <div id="brand">Cadoops' Cats<div id="ver">Prototype v0.2.1</div><div id="age">Kitten • 10 weeks</div></div>
   <div id="status">Loading 3D world…</div>
   <div id="stick"><div id="knob"></div></div>
   <button class="btn" id="jump">JUMP</button>
@@ -85,9 +85,9 @@ button{appearance:none;-webkit-appearance:none}
     <div class="settingRow">
       <div class="settingTitle">
         <span>Music Volume</span>
-        <span id="musicVolumeValue">50 / 100</span>
+        <span id="musicVolumeValue">5 / 100</span>
       </div>
-      <input id="musicVolume" type="range" min="0" max="100" value="50" step="1" aria-label="Music volume">
+      <input id="musicVolume" type="range" min="0" max="100" value="5" step="1" aria-label="Music volume">
     </div>
     <button id="settingsDone">DONE</button>
   </div>
@@ -203,7 +203,7 @@ const MusicAudioCtx=window.AudioContext||window.webkitAudioContext;
 const musicCtx=MusicAudioCtx?new MusicAudioCtx():null;
 let musicSource=null;
 let musicGain=null;
-let musicVolume=.50;
+let musicVolume=.05;
 let musicEnabled=true;
 let musicStarted=false;
 let gameStarted=false;
@@ -238,7 +238,7 @@ function setMusicVolume(value){
   musicVolumeValue.textContent=Math.round(n)+' / 100';
   applyMusicVolume();
 }
-setMusicVolume(50);
+setMusicVolume(5);
 
 async function startMusicFromGesture(){
   if(!musicEnabled)return;
@@ -439,12 +439,80 @@ try{
     return false;
   }
 
+  function depenetrateCat(){
+    // Emergency push-out: if the cat overlaps furniture for any reason,
+    // move it to the nearest free edge instead of leaving it trapped inside.
+    for(let pass=0;pass<10;pass++){
+      let moved=false;
+      for(const s of solidBoxes){
+        if(cat.position.y>=s.top-.065)continue;
+
+        const minX=s.x-s.w/2-CAT_COLLISION_RADIUS;
+        const maxX=s.x+s.w/2+CAT_COLLISION_RADIUS;
+        const minZ=s.z-s.d/2-CAT_COLLISION_RADIUS;
+        const maxZ=s.z+s.d/2+CAT_COLLISION_RADIUS;
+
+        if(cat.position.x<=minX||cat.position.x>=maxX||
+           cat.position.z<=minZ||cat.position.z>=maxZ)continue;
+
+        const left=cat.position.x-minX;
+        const right=maxX-cat.position.x;
+        const back=cat.position.z-minZ;
+        const front=maxZ-cat.position.z;
+        const minPen=Math.min(left,right,back,front);
+        const gap=.014;
+
+        if(minPen===left)cat.position.x=minX-gap;
+        else if(minPen===right)cat.position.x=maxX+gap;
+        else if(minPen===back)cat.position.z=minZ-gap;
+        else cat.position.z=maxZ+gap;
+
+        moved=true;
+      }
+      if(!moved)break;
+    }
+  }
+
   function resolveHouseCollision(oldX,oldZ){
-    let nx=cat.position.x,nz=cat.position.z;
-    if(collidesWithSolid(nx,oldZ,cat.position.y))nx=oldX;
-    if(collidesWithSolid(nx,nz,cat.position.y))nz=oldZ;
-    cat.position.x=nx;
-    cat.position.z=nz;
+    const wantedX=cat.position.x;
+    const wantedZ=cat.position.z;
+
+    // First guarantee that the starting point itself is legal.
+    cat.position.x=oldX;
+    cat.position.z=oldZ;
+    depenetrateCat();
+
+    const startX=cat.position.x;
+    const startZ=cat.position.z;
+    const dx=wantedX-startX;
+    const dz=wantedZ-startZ;
+    const distance=Math.hypot(dx,dz);
+    const steps=Math.max(1,Math.ceil(distance/.045));
+
+    let x=startX,z=startZ;
+
+    // Swept movement prevents tunnelling through thin legs/walls when running.
+    for(let i=1;i<=steps;i++){
+      const tx=startX+dx*(i/steps);
+      const tz=startZ+dz*(i/steps);
+
+      if(!collidesWithSolid(tx,tz,cat.position.y)){
+        x=tx;
+        z=tz;
+        continue;
+      }
+
+      // Slide along the face of furniture instead of sticking to it.
+      const canX=!collidesWithSolid(tx,z,cat.position.y);
+      const canZ=!collidesWithSolid(x,tz,cat.position.y);
+      if(canX)x=tx;
+      if(canZ)z=tz;
+      if(!canX&&!canZ)break;
+    }
+
+    cat.position.x=x;
+    cat.position.z=z;
+    depenetrateCat();
   }
 
   function landingSurfaceHeight(x,z,previousY,newY){
@@ -673,7 +741,7 @@ try{
 
   // --- Cat model / life-stage rig ---
   const cat=new THREE.Group();
-  cat.position.set(0,0,2);
+  cat.position.set(2.15,0,6.15);
   scene.add(cat);
 
   const catRig=new THREE.Group();
@@ -1504,6 +1572,10 @@ try{
 
   const clock=new THREE.Clock();
   const camPos=new THREE.Vector3();
+
+  // Final spawn safety: never begin the game embedded in furniture.
+  depenetrateCat();
+
   status.textContent='Press to start';
 
   function animate(){
@@ -1577,6 +1649,7 @@ try{
           cat.position.y=support;
           vy=0;
           onGround=true;
+          depenetrateCat();
         }else if(cat.position.y<=0){
           cat.position.y=0;
           vy=0;
