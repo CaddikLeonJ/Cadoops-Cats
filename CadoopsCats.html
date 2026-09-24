@@ -102,8 +102,8 @@ button{appearance:none;-webkit-appearance:none}
 
 <div id="customPanel">
   <div id="customCard">
-    <h2>Customise Cat</h2>
-    <p class="sub">Changes update on your kitten instantly.</p>
+    <h2>Customise</h2>
+    <p class="sub">Edit your cat and the placeholder household.</p>
 
     <div class="customGroup">
       <div class="customLabel">Coat colour</div>
@@ -1607,7 +1607,8 @@ try{
     if(!host)return;
     humanColourPalettes[part].forEach((hex,index)=>{
       const b=document.createElement('button');
-      b.className='swatch'+(index===0?' selected':'');
+      const currentHex=household[person].userData.materials[part].color.getHex();
+      b.className='swatch'+(currentHex===hex?' selected':'');
       b.style.background=colourHex(hex);
       b.dataset.human=person;
       b.dataset.humanPart=part;
@@ -1860,7 +1861,7 @@ try{
   });
 
   document.getElementById('jump').addEventListener('pointerdown',e=>{e.preventDefault();
-    if(gameStarted && !customOpen && !settingsOpen && onGround && lifeStage!=='Newborn'){
+    if(gameStarted && !customOpen && !settingsOpen && !climbing && onGround && lifeStage!=='Newborn'){
       if(biscuitsActive)stopBiscuits();
       markActive();
       // Kittens start with a smaller hop and gain jump strength as they mature.
@@ -2005,7 +2006,9 @@ try{
     const gait=Math.min(1,currentSpeed/adultRun);
     const youth=1-ageAdultness;
 
-    if(currentSpeed>.08 && onGround){
+    if(climbing){
+      // updateClimb() owns the whole body/leg pose while attached to a surface.
+    }else if(currentSpeed>.08 && onGround){
       stopGrooming();
       idleSeconds=0;
 
@@ -2376,7 +2379,7 @@ try{
     idlePhase+=dt;
     const youthIdle=1-ageAdultness;
 
-    if(grooming!=='tailBase'){
+    if(!climbing&&grooming!=='tailBase'){
       const tailBaseTarget=1.02 + (moving?.12:.20);
       tailRoot.rotation.x+=(tailBaseTarget-tailRoot.rotation.x)*Math.min(1,6*dt);
       tailRoot.rotation.y=Math.sin(t*(1.25+youthIdle*.45))*(moving?.14:.24);
@@ -2400,7 +2403,7 @@ try{
     }else{
       chest.scale.y+=(1.10-chest.scale.y)*Math.min(1,10*dt);
     }
-    if(!grooming&&!swipeActive){
+    if(!grooming&&!swipeActive&&!climbing){
       head.rotation.y=Math.sin(t*.72)*.055*idleCuriosity;
       if(currentSpeed<=.08)head.rotation.x=Math.sin(t*.91)*.025*idleCuriosity;
       head.rotation.z=Math.sin(movePhase)*.010*gait + Math.sin(t*.63)*.012*idleCuriosity;
