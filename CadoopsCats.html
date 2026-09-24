@@ -77,7 +77,7 @@ button{appearance:none;-webkit-appearance:none}
 </div>
 
 <div id="hud">
-  <div id="brand">Cadoops' Cats<div id="ver">Prototype v0.4.0</div><div id="age">Kitten • 10 weeks</div></div>
+  <div id="brand">Cadoops' Cats<div id="ver">Prototype v0.4.1</div><div id="age">Kitten • 10 weeks</div></div>
   <div id="status">Loading 3D world…</div>
   <div id="stick"><div id="knob"></div></div>
   <button class="btn" id="jump">JUMP</button>
@@ -689,6 +689,23 @@ try{
   const foodBowl=makePetBowl(foodBowlPos,foodMat);
   const waterBowl=makePetBowl(waterBowlPos,waterMat);
 
+  // Pantry/storage cupboard used by household refill/cleaning routines.
+  const storageCupboard=solidBox(-3.10,.78,-7.42,.82,1.56,.56,woodMat,{name:'household storage'});
+  box(-3.10,1.03,-7.12,.56,.035,.03,metalMat);
+  box(-3.10,.63,-7.12,.56,.035,.03,metalMat);
+  const foodStoreBox=box(-3.10,.92,-7.08,.38,.28,.12,new THREE.MeshStandardMaterial({color:0xb9874e,roughness:.95}));
+  const cleanStoreBox=box(-3.10,.48,-7.08,.34,.22,.12,new THREE.MeshStandardMaterial({color:0x6e8b91,roughness:.9}));
+  const storageUsePos=new THREE.Vector3(-3.10,0,-6.72);
+
+  // Sink/faucet used when refilling the water bowl.
+  const sinkBasin=box(-5.20,.92,-6.58,.72,.055,.46,metalMat);
+  const faucetStem=cylinder(-5.20,1.08,-6.78,.027,.30,metalMat);
+  const faucetSpout=box(-5.20,1.20,-6.65,.055,.055,.28,metalMat);
+  const faucetUsePos=new THREE.Vector3(-5.20,0,-5.78);
+  const faucetFlowMat=new THREE.MeshStandardMaterial({color:0x8ed8f3,roughness:.15,transparent:true,opacity:.62});
+  const faucetFlow=cylinder(-5.20,1.03,-6.51,.018,.24,faucetFlowMat);
+  faucetFlow.visible=false;
+
   // ---------------- Bathroom ----------------
   const bathroomFloorMat=new THREE.MeshStandardMaterial({color:0xd7e0df,roughness:.78});
   const bathroomFloor=new THREE.Mesh(new THREE.PlaneGeometry(3.2,2.5),bathroomFloorMat);
@@ -709,7 +726,7 @@ try{
   solidBox(7.65,.38,-.48,.78,.76,.46,porcelainMat,{climbable:true,name:'bathroom sink'});
   box(7.65,.83,-.66,.65,.08,.18,metalMat);
 
-  // Litter tray, intentionally low/non-solid so it cannot trap the player.
+  // Litter tray is a real physical object. The low rim is climbable so the cat can enter it normally.
   const litterPos=new THREE.Vector3(6.75,0,.83);
   const litterGroup=new THREE.Group();
   litterGroup.position.copy(litterPos);
@@ -724,6 +741,7 @@ try{
   litterSand.position.y=.135;
   litterSand.receiveShadow=true;
   litterGroup.add(litterSand);
+  registerSolid(litterPos.x,litterPos.z,1.05,.78,.16,0,true,'litter tray');
 
   // Needs/litter simulation state.
   const catNeeds={
@@ -825,10 +843,16 @@ try{
       box(0,-height*.15,0,.12,height*.31,.13,shirtMat,arm);
       arms.push(arm);
     }
+    const carryAnchor=new THREE.Group();
+    carryAnchor.position.set(0,-height*.31,.02);
+    arms[1].add(carryAnchor);
+
     scene.add(human);
     human.userData.legs=legs;
     human.userData.arms=arms;
     human.userData.materials={skin:skinMat,shirt:shirtMat,trousers:trouserMat,hair:hairMat};
+    human.userData.carryAnchor=carryAnchor;
+    human.userData.carryType=null;
     human.userData.walkPhase=0;
     human.userData.routeIndex=0;
     human.userData.health=100;
@@ -874,10 +898,60 @@ try{
     return best;
   }
 
+  function clearHumanCarry(h){
+    const anchor=h.userData.carryAnchor;
+    while(anchor&&anchor.children.length)anchor.remove(anchor.children[0]);
+    h.userData.carryType=null;
+  }
+
+  function setHumanCarry(h,type){
+    clearHumanCarry(h);
+    const anchor=h.userData.carryAnchor;
+    if(!anchor)return;
+
+    let item;
+    if(type==='food'){
+      item=new THREE.Mesh(
+        new THREE.BoxGeometry(.16,.21,.12),
+        new THREE.MeshStandardMaterial({color:0xb87e45,roughness:.92})
+      );
+      item.rotation.z=.10;
+    }else if(type==='water'){
+      item=new THREE.Mesh(
+        new THREE.CylinderGeometry(.075,.095,.19,12),
+        new THREE.MeshStandardMaterial({color:0x9fcfdf,roughness:.35,transparent:true,opacity:.88})
+      );
+    }else{
+      const g=new THREE.Group();
+      const scoopHead=new THREE.Mesh(
+        new THREE.BoxGeometry(.13,.045,.16),
+        new THREE.MeshStandardMaterial({color:0x74848b,roughness:.65})
+      );
+      scoopHead.position.y=-.07;
+      const handle=new THREE.Mesh(
+        new THREE.CylinderGeometry(.018,.018,.27,8),
+        new THREE.MeshStandardMaterial({color:0x545e62,roughness:.7})
+      );
+      handle.position.y=.075;
+      g.add(scoopHead,handle);
+      item=g;
+    }
+    item.castShadow=true;
+    anchor.add(item);
+    h.userData.carryType=type;
+  }
+
   function assignHouseholdTask(type,target){
-    const h=nearestAvailableHuman(target);
+    const source=type==='refillWater'?faucetUsePos:storageUsePos;
+    const h=nearestAvailableHuman(source);
     if(!h)return false;
-    h.userData.task={type,x:target.x,z:target.z};
+
+    h.userData.task={
+      type,
+      phase:'fetch',
+      source:{x:source.x,z:source.z},
+      destination:{x:target.x,z:target.z}
+    };
     h.userData.taskTimer=0;
     return true;
   }
@@ -916,7 +990,8 @@ try{
 
     if(h.userData.task){
       const task=h.userData.task;
-      const dx=task.x-h.position.x,dz=task.z-h.position.z;
+      const point=task.phase==='fetch'?task.source:task.destination;
+      const dx=point.x-h.position.x,dz=point.z-h.position.z;
       const dist=Math.hypot(dx,dz);
 
       if(dist>.42){
@@ -930,14 +1005,27 @@ try{
         h.userData.legs[0].rotation.x=swing;
         h.userData.legs[1].rotation.x=-swing;
         h.userData.arms[0].rotation.x=-swing*.5;
-        h.userData.arms[1].rotation.x=swing*.5;
+        h.userData.arms[1].rotation.x=swing*.35;
       }else{
         h.userData.taskTimer+=dt;
         const work=Math.sin(h.userData.taskTimer*6)*.22;
         h.userData.arms[0].rotation.x+=(-.75+work-h.userData.arms[0].rotation.x)*Math.min(1,10*dt);
-        h.userData.arms[1].rotation.x+=(-.75-work-h.userData.arms[1].rotation.x)*Math.min(1,10*dt);
+        h.userData.arms[1].rotation.x+=(-.72-work-h.userData.arms[1].rotation.x)*Math.min(1,10*dt);
 
-        if(h.userData.taskTimer>1.8){
+        if(task.phase==='fetch'){
+          if(task.type==='refillWater')faucetFlow.visible=true;
+
+          if(h.userData.taskTimer>1.25){
+            faucetFlow.visible=false;
+            setHumanCarry(
+              h,
+              task.type==='refillFood'?'food':
+              task.type==='refillWater'?'water':'cleaning'
+            );
+            task.phase='deliver';
+            h.userData.taskTimer=0;
+          }
+        }else if(h.userData.taskTimer>1.75){
           if(task.type==='refillFood'){
             catNeeds.foodLevel=1;
             refillFoodRequested=false;
@@ -947,6 +1035,9 @@ try{
           }else if(task.type==='cleanLitter'){
             clearLitterWaste();
           }
+
+          clearHumanCarry(h);
+          faucetFlow.visible=false;
           h.userData.task=null;
           h.userData.taskTimer=0;
         }
@@ -1542,6 +1633,8 @@ try{
   let careAction=null;
   let careActionTime=0;
   let careActionDuration=0;
+  let careTargetYaw=0;
+  let careTargetDistance=.5;
   let customOpen=false;
   let settingsOpen=false;
   let savedCameraYaw=0;
@@ -2174,11 +2267,14 @@ try{
     careActionDuration=type==='eat'?3.2:type==='drink'?3.0:type==='poop'?3.4:2.6;
 
     if(type==='eat'||type==='drink'){
-      const p=type==='eat'?foodBowlPos:waterBowlPos;
-      cat.position.x=p.x;
-      cat.position.z=p.z+.43;
-      cat.position.y=0;
-      cat.rotation.y=Math.PI;
+      const target=type==='eat'?foodBowlPos:waterBowlPos;
+      careTargetYaw=Math.atan2(target.x-cat.position.x,target.z-cat.position.z);
+      careTargetDistance=Math.hypot(target.x-cat.position.x,target.z-cat.position.z);
+      // Stay exactly where the player pressed the action. Only turn toward the bowl.
+      const p=target;
+      const dx=p.x-cat.position.x;
+      const dz=p.z-cat.position.z;
+      cat.rotation.y=Math.atan2(dx,dz);
     }else{
       cat.position.x=litterPos.x;
       cat.position.z=litterPos.z+.03;
@@ -2487,9 +2583,12 @@ try{
         torso.position.y+=(.49-torso.position.y)*Math.min(1,10*dt);
         shoulders.position.y+=(.50-shoulders.position.y)*Math.min(1,11*dt);
         haunches.position.y+=(.52-haunches.position.y)*Math.min(1,9*dt);
-        neck.rotation.x+=(-.28-neck.rotation.x)*Math.min(1,12*dt);
-        head.position.y+=(.61-head.position.y)*Math.min(1,12*dt);
-        head.rotation.x+=((eating?-.58:-.68)+Math.sin(careActionTime*9)*.035-head.rotation.x)*Math.min(1,14*dt);
+        const reach=Math.max(0,Math.min(1,(.92-careTargetDistance)/.52));
+        neck.rotation.x+=((-.24-reach*.10)-neck.rotation.x)*Math.min(1,12*dt);
+        head.position.y+=((.64-reach*.055)-head.position.y)*Math.min(1,12*dt);
+        head.position.z+=((.63+reach*.055)-head.position.z)*Math.min(1,12*dt);
+        head.rotation.x+=((eating?-.54:-.64)-reach*.08+Math.sin(careActionTime*9)*.035-head.rotation.x)*Math.min(1,14*dt);
+        cat.rotation.y+=angleDelta(cat.rotation.y,careTargetYaw)*Math.min(1,10*dt);
 
         for(const leg of [legs[0],legs[1]]){
           leg.rotation.x+=(-.18-leg.rotation.x)*Math.min(1,12*dt);
