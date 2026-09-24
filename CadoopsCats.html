@@ -45,11 +45,26 @@ button{appearance:none;-webkit-appearance:none}
 .swatch{width:40px;height:40px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 2px #0003;touch-action:manipulation}
 .swatch.selected{box-shadow:0 0 0 3px #222}
 #customDone{width:100%;min-height:48px;margin-top:14px;border:0;border-radius:14px;background:#222;color:#fff;font-size:16px;font-weight:900;touch-action:manipulation}
+#startScreen{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:linear-gradient(#7fb4d2,#9fc8d9);color:white;text-align:center;pointer-events:auto;touch-action:manipulation}
+#startScreen.hidden{display:none}
+#startCard{padding:30px 24px;text-shadow:0 3px 8px #0006}
+#startTitle{font-size:36px;font-weight:900;letter-spacing:-1px;margin-bottom:8px}
+#startSub{font-size:14px;opacity:.92;margin-bottom:28px}
+#pressStart{display:inline-block;padding:15px 26px;border:2px solid #fff;border-radius:18px;background:#ffffff24;font-size:18px;font-weight:900;animation:startPulse 1.35s ease-in-out infinite}
+@keyframes startPulse{0%,100%{transform:scale(1);opacity:.82}50%{transform:scale(1.055);opacity:1}}
 </style>
 </head>
 <body>
+<div id="startScreen">
+  <div id="startCard">
+    <div id="startTitle">Cadoops' Cats</div>
+    <div id="startSub">Live life on four paws.</div>
+    <div id="pressStart">PRESS TO START</div>
+  </div>
+</div>
+
 <div id="hud">
-  <div id="brand">Cadoops' Cats<div id="ver">Prototype v0.1.5</div><div id="age">Kitten • 10 weeks</div></div>
+  <div id="brand">Cadoops' Cats<div id="ver">Prototype v0.1.6</div><div id="age">Kitten • 10 weeks</div></div>
   <div id="status">Loading 3D world…</div>
   <div id="stick"><div id="knob"></div></div>
   <button class="btn" id="jump">JUMP</button>
@@ -167,40 +182,89 @@ document.addEventListener('contextmenu',e=>e.preventDefault());
 document.addEventListener('selectstart',e=>e.preventDefault());
 
 const musicBtn=document.getElementById('musicBtn');
+const settingsBtn=document.getElementById('settingsBtn');
+const settingsPanel=document.getElementById('settingsPanel');
+const settingsDone=document.getElementById('settingsDone');
+const musicVolumeSlider=document.getElementById('musicVolume');
+const musicVolumeValue=document.getElementById('musicVolumeValue');
+const startScreen=document.getElementById('startScreen');
+
 const MUSIC_URL='https://raw.githubusercontent.com/CaddikLeonJ/Cadoops-Cats/main/Curious%20Whiskers.mp3';
-const bgMusic=new Audio(MUSIC_URL);
+const bgMusic=new Audio();
+bgMusic.crossOrigin='anonymous';
+bgMusic.src=MUSIC_URL;
 bgMusic.loop=true;
 bgMusic.preload='auto';
-let musicVolume=.50;
-bgMusic.volume=musicVolume;
 bgMusic.setAttribute('playsinline','');
+
+const MusicAudioCtx=window.AudioContext||window.webkitAudioContext;
+const musicCtx=MusicAudioCtx?new MusicAudioCtx():null;
+let musicSource=null;
+let musicGain=null;
+let musicVolume=.50;
 let musicEnabled=true;
 let musicStarted=false;
+let gameStarted=false;
+
+if(musicCtx){
+  try{
+    musicSource=musicCtx.createMediaElementSource(bgMusic);
+    musicGain=musicCtx.createGain();
+    musicGain.gain.value=musicVolume;
+    musicSource.connect(musicGain);
+    musicGain.connect(musicCtx.destination);
+  }catch(err){
+    musicSource=null;
+    musicGain=null;
+  }
+}
+
+function applyMusicVolume(){
+  if(musicGain&&musicCtx){
+    musicGain.gain.cancelScheduledValues(musicCtx.currentTime);
+    musicGain.gain.setTargetAtTime(musicEnabled?musicVolume:0,musicCtx.currentTime,.015);
+  }else{
+    // Fallback for browsers that do honour HTMLMediaElement.volume.
+    bgMusic.volume=musicEnabled?musicVolume:0;
+  }
+}
+
+function setMusicVolume(value){
+  const n=Math.max(0,Math.min(100,Number(value)||0));
+  musicVolume=n/100;
+  musicVolumeSlider.value=String(Math.round(n));
+  musicVolumeValue.textContent=Math.round(n)+' / 100';
+  applyMusicVolume();
+}
+setMusicVolume(50);
 
 async function startMusicFromGesture(){
-  if(!musicEnabled || musicStarted)return;
+  if(!musicEnabled)return;
   try{
-    bgMusic.volume=musicVolume;
-    await bgMusic.play();
+    if(musicCtx&&musicCtx.state==='suspended')await musicCtx.resume();
+    applyMusicVolume();
+    if(bgMusic.paused)await bgMusic.play();
     musicStarted=true;
     musicBtn.textContent='MUSIC: ON';
   }catch(err){
-    // iOS may still reject a non-user-initiated attempt; the next direct tap retries.
+    musicStarted=false;
   }
 }
 
 function stopMusic(){
   bgMusic.pause();
   musicStarted=false;
+  applyMusicVolume();
 }
 
 musicBtn.addEventListener('pointerdown',async e=>{
   e.preventDefault();
   e.stopPropagation();
+  if(!gameStarted)return;
   musicEnabled=!musicEnabled;
   if(musicEnabled){
     musicBtn.textContent='MUSIC: ON';
-    bgMusic.volume=musicVolume;
+    applyMusicVolume();
     await startMusicFromGesture();
   }else{
     musicBtn.textContent='MUSIC: OFF';
@@ -208,24 +272,10 @@ musicBtn.addEventListener('pointerdown',async e=>{
   }
 });
 
-const settingsBtn=document.getElementById('settingsBtn');
-const settingsPanel=document.getElementById('settingsPanel');
-const settingsDone=document.getElementById('settingsDone');
-const musicVolumeSlider=document.getElementById('musicVolume');
-const musicVolumeValue=document.getElementById('musicVolumeValue');
-
-function setMusicVolume(value){
-  const n=Math.max(0,Math.min(100,Number(value)||0));
-  musicVolume=n/100;
-  bgMusic.volume=musicVolume;
-  musicVolumeSlider.value=String(n);
-  musicVolumeValue.textContent=Math.round(n)+' / 100';
-}
-setMusicVolume(50);
-
 settingsBtn.addEventListener('pointerdown',e=>{
   e.preventDefault();
   e.stopPropagation();
+  if(!gameStarted)return;
   settingsPanel.classList.add('open');
 });
 
@@ -239,12 +289,22 @@ musicVolumeSlider.addEventListener('input',e=>{
   e.stopPropagation();
   setMusicVolume(e.target.value);
 });
+musicVolumeSlider.addEventListener('change',e=>{
+  e.stopPropagation();
+  setMusicVolume(e.target.value);
+});
 
-// iOS/WebView audio can only begin after a real user gesture.
-// The first interaction anywhere in the game unlocks and starts the soundtrack.
-document.addEventListener('pointerdown',()=>{
-  if(musicEnabled)startMusicFromGesture();
-},{capture:true});
+startScreen.addEventListener('pointerdown',async e=>{
+  e.preventDefault();
+  e.stopPropagation();
+  if(gameStarted)return;
+  gameStarted=true;
+  if(musicCtx&&musicCtx.state==='suspended'){
+    try{await musicCtx.resume()}catch(err){}
+  }
+  await startMusicFromGesture();
+  startScreen.classList.add('hidden');
+},{once:true});
 
 try{
   const THREE=await import('https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js');
@@ -440,7 +500,11 @@ try{
       [1.18,.50,1.48]
     );
     pawMeshes.push(paw);
-    leg.userData={isFront,upper,lower,paw};
+    leg.userData={
+      isFront,upper,lower,paw,
+      baseX:x,baseY:.43,baseZ:z,
+      basePawY:-.405,basePawZ:.055
+    };
     legs.push(leg);
     return leg;
   }
@@ -839,6 +903,7 @@ try{
   let idlePhase=0;
   let idleSeconds=0;
   let grooming=null;
+  let lastGrooming=null;
   let groomingTime=0;
   let groomingDuration=0;
   let groomingSide=1;
@@ -853,6 +918,7 @@ try{
   const customDone=document.getElementById('customDone');
 
   settingsBtn.addEventListener('pointerdown',()=>{
+    if(!gameStarted)return;
     settingsOpen=true;
     move.x=move.y=0;
     runHeld=false;
@@ -938,7 +1004,7 @@ try{
   let sid=null;
 
   function stickMove(e){
-    if(customOpen||settingsOpen)return;
+    if(!gameStarted||customOpen||settingsOpen)return;
     markActive();
     const r=stick.getBoundingClientRect();
     const dx=e.clientX-(r.left+r.width/2);
@@ -1038,7 +1104,7 @@ try{
   }
 
   function playMeow(){
-    if(customOpen||settingsOpen)return;
+    if(!gameStarted||customOpen||settingsOpen)return;
     markActive();
     meowMouthUntil=performance.now()+620;
     // No pause(), seek or shared Audio element: every press is independent.
@@ -1046,7 +1112,7 @@ try{
   }
 
   function playPurr(){
-    if(customOpen||settingsOpen)return;
+    if(!gameStarted||customOpen||settingsOpen)return;
     markActive();
     purrUntil=Math.max(purrUntil,performance.now()+4000);
     playBuffer(purrBuffer,1);
@@ -1065,7 +1131,7 @@ try{
   });
 
   document.getElementById('jump').addEventListener('pointerdown',e=>{e.preventDefault();
-    if(!customOpen && !settingsOpen && onGround && lifeStage!=='Newborn'){
+    if(gameStarted && !customOpen && !settingsOpen && onGround && lifeStage!=='Newborn'){
       markActive();
       // Kittens start with a smaller hop and gain jump strength as they mature.
       const jumpStrength=mix(2.85,3.95,ageAdultness)*(lifeStage==='Senior'?.86:1);
@@ -1076,7 +1142,7 @@ try{
 
   let lookId=null,lastX=0;
   renderer.domElement.addEventListener('pointerdown',e=>{
-    if(customOpen||settingsOpen)return;
+    if(!gameStarted||customOpen||settingsOpen)return;
     markActive();
     lookId=e.pointerId;
     lastX=e.clientX;
@@ -1101,18 +1167,18 @@ try{
 
   const clock=new THREE.Clock();
   const camPos=new THREE.Vector3();
-  status.textContent='Test Room • Cat ready';
+  status.textContent='Press to start';
 
   function animate(){
     requestAnimationFrame(animate);
     resizeRenderer();
     const dt=Math.min(clock.getDelta(),.033);
 
-    if(!customOpen&&!settingsOpen)ageWeeks+=AGE_WEEKS_PER_SECOND*dt;
+    if(gameStarted&&!customOpen&&!settingsOpen)ageWeeks+=AGE_WEEKS_PER_SECOND*dt;
     updateGrowth();
 
     const inputMag=Math.min(1,Math.hypot(move.x,move.y));
-    const moving=!customOpen && !settingsOpen && inputMag>.06;
+    const moving=gameStarted && !customOpen && !settingsOpen && inputMag>.06;
 
     let desiredSpeed=0;
     if(moving && lifeStage!=='Newborn'){
@@ -1168,7 +1234,8 @@ try{
       onGround=true;
     }
 
-    // Feline locomotion: a planted four-beat walk and a springier galloping run.
+    // Feline locomotion: paws plant, limbs fold at the joints, and the whole
+    // fore/hind leg travels from shoulder/hip rather than only rotating the feet.
     const adultRun=4.35;
     const gait=Math.min(1,currentSpeed/adultRun);
     const youth=1-ageAdultness;
@@ -1178,94 +1245,112 @@ try{
       idleSeconds=0;
 
       const running=runHeld && !tired && currentSpeed>2.0;
-      movePhase+=dt*(running?12.4:6.0)*(0.58+gait*.72);
+      movePhase+=dt*(running?13.0:6.25)*(0.58+gait*.72);
 
-      // Array order is front-left, front-right, hind-left, hind-right.
-      // Walk order: hind-left -> front-left -> hind-right -> front-right.
-      const walkOffsets=[.25,.75,0,.50];
-      // Run/gallop: rear legs drive first, front legs catch and extend.
-      const runOffsets=[.56,.64,.06,0];
+      // Cat walk is a four-beat lateral-sequence walk. At speed it changes to a
+      // bounding/galloping pattern with the hindquarters driving the body forward.
+      const walkOffsets=[.25,.75,0,.50];   // FL, FR, HL, HR
+      const runOffsets=[.57,.68,.04,0];    // front catch after rear drive
 
       legs.forEach((leg,i)=>{
+        const front=leg.userData.isFront;
         const offset=running?runOffsets[i]:walkOffsets[i];
         const cycle=((movePhase/(Math.PI*2))+offset)%1;
-        const stancePortion=running?.56:.68;
-        let swing, lift;
+        const stance=running?.50:.66;
 
-        if(cycle<stancePortion){
-          const u=cycle/stancePortion;
-          // Paw remains comparatively planted while the body passes over it.
-          swing=mix(.34,-.30,u);
+        let reach=0;
+        let lift=0;
+        let fold=0;
+
+        if(cycle<stance){
+          const u=cycle/stance;
+          // During stance the paw is on the ground while the shoulder/hip passes over it.
+          reach=mix(.34,-.34,u);
           lift=0;
+          fold=front?mix(.05,.16,u):mix(.12,.25,u);
         }else{
-          const u=(cycle-stancePortion)/(1-stancePortion);
-          // Quick recovery stroke: paw folds, lifts, then reaches forward.
-          swing=mix(-.30,.34,u);
-          lift=Math.sin(u*Math.PI);
+          const u=(cycle-stance)/(1-stance);
+          // Recovery: leg folds up, travels forward, then extends before landing.
+          const arc=Math.sin(u*Math.PI);
+          reach=mix(-.34,.34,u);
+          lift=arc;
+          fold=(front?(running?.82:.58):(running?1.02:.72))*arc;
         }
 
-        const front=leg.userData.isFront;
-        const amp=running?1.22:.78;
-        leg.rotation.x+=(swing*amp-leg.rotation.x)*Math.min(1,(running?18:13)*dt);
+        const rootReach=reach*(running?.38:.24);
+        const rootLift=lift*(running?.105:.062);
 
-        const upper=leg.userData.upper;
-        const lower=leg.userData.lower;
-        const paw=leg.userData.paw;
+        // Move the complete limb from the shoulder/hip.
+        leg.position.z+=(leg.userData.baseZ+rootReach-leg.position.z)*Math.min(1,20*dt);
+        leg.position.y+=(leg.userData.baseY+rootLift-leg.position.y)*Math.min(1,22*dt);
+        leg.rotation.x+=(reach*(running?1.22:.84)-leg.rotation.x)*Math.min(1,18*dt);
 
-        const upperTarget=swing*(front?.34:.44)+(front?-.02:.04);
-        const lowerFold=front?(running?.72:.50):(running?.90:.62);
-        const lowerTarget=-lift*lowerFold+(front?-.06:.10);
-        const pawTarget=lift*(front?.34:.42);
+        // Upper limb follows the root while the lower limb folds underneath.
+        const upperTarget=reach*(front?.34:.46)+(front?-.03:.08);
+        const lowerTarget=(front?-.08:.12)-fold;
+        const pawTarget=lift*(front?.48:.60)-(front?.02:.06);
 
-        upper.rotation.x+=(upperTarget-upper.rotation.x)*Math.min(1,18*dt);
-        lower.rotation.x+=(lowerTarget-lower.rotation.x)*Math.min(1,20*dt);
-        paw.rotation.x+=(pawTarget-paw.rotation.x)*Math.min(1,22*dt);
-        paw.position.y+=((-.405+lift*(running?.075:.045))-paw.position.y)*Math.min(1,22*dt);
-        paw.position.z+=((.055 + swing*(front?.025:.035))-paw.position.z)*Math.min(1,18*dt);
+        leg.userData.upper.rotation.x+=(upperTarget-leg.userData.upper.rotation.x)*Math.min(1,20*dt);
+        leg.userData.lower.rotation.x+=(lowerTarget-leg.userData.lower.rotation.x)*Math.min(1,22*dt);
+        leg.userData.paw.rotation.x+=(pawTarget-leg.userData.paw.rotation.x)*Math.min(1,24*dt);
+
+        // Paw actually travels with the stride rather than hovering under a swinging tube.
+        const pawY=leg.userData.basePawY + rootLift*.52 + lift*(running?.045:.028);
+        const pawZ=leg.userData.basePawZ + reach*(front?.075:.095);
+        leg.userData.paw.position.y+=(pawY-leg.userData.paw.position.y)*Math.min(1,24*dt);
+        leg.userData.paw.position.z+=(pawZ-leg.userData.paw.position.z)*Math.min(1,22*dt);
+
+        // Hind paws rotate slightly outward during recovery, as a cat tucks the hock.
+        leg.rotation.z+=(((front?0:(i===2?-1:1)*lift*.055))-leg.rotation.z)*Math.min(1,16*dt);
       });
 
-      // The shoulder girdle and pelvis rise at different times as weight transfers.
+      // Weight transfer through shoulders, spine and pelvis.
       const strideWave=Math.sin(movePhase);
       const doubleWave=Math.sin(movePhase*2);
-      const shoulderWave=Math.sin(movePhase*2+.72);
-      const hipWave=Math.sin(movePhase*2-.62);
-      const bounce=(running?.034:.014)*gait;
+      const shoulderWave=Math.sin(movePhase*2+.68);
+      const hipWave=Math.sin(movePhase*2-.58);
+      const bounce=(running?.040:.015)*gait;
 
       shoulders.position.y=.56+shoulderWave*bounce;
-      haunches.position.y=.55+hipWave*bounce*.82;
-      torso.position.y=.53+doubleWave*bounce*.42;
+      haunches.position.y=.55+hipWave*bounce*.72;
+      torso.position.y=.53+doubleWave*bounce*.38;
 
-      // Run flexes and extends through the spine; walk keeps it much subtler.
-      const spineFlex=(running?.060:.018)*strideWave*gait;
+      const spineFlex=(running?.070:.020)*strideWave*gait;
       const baseTorsoZ=mix(.98,.92,youth);
-      torso.scale.z+=(baseTorsoZ+spineFlex-torso.scale.z)*Math.min(1,13*dt);
-      shoulders.position.z=.34-(running?strideWave*.020:strideWave*.006)*gait;
-      haunches.position.z=-.32+(running?strideWave*.028:strideWave*.008)*gait;
+      torso.scale.z+=(baseTorsoZ+spineFlex-torso.scale.z)*Math.min(1,14*dt);
 
-      neck.rotation.x+=(Math.sin(movePhase*2+.4)*.028*gait-neck.rotation.x)*Math.min(1,12*dt);
-      head.position.y=(lifeStage==='Senior'?.765:.79)+shoulderWave*bounce*.48;
-      head.rotation.x+=(Math.sin(movePhase*2+.9)*.018*gait-head.rotation.x)*Math.min(1,12*dt);
+      // The pelvis drives more strongly during the run.
+      shoulders.position.z=.34-strideWave*(running?.026:.008)*gait;
+      haunches.position.z=-.32+strideWave*(running?.040:.010)*gait;
+      haunches.rotation.x+=(running?(-Math.max(0,strideWave)*.10):0-haunches.rotation.x)*Math.min(1,12*dt);
 
-      // Counter-rotation of shoulders and pelvis gives the body a cat-like flowing gait.
-      torso.rotation.y=Math.sin(movePhase)*.028*gait;
-      shoulders.rotation.y=-Math.sin(movePhase)*.052*gait;
-      haunches.rotation.y=Math.sin(movePhase)*.068*gait;
-      catRig.rotation.z=Math.sin(movePhase)*.012*gait+
-                        Math.sin(movePhase*.5)*.014*youth*gait;
+      neck.rotation.x+=(Math.sin(movePhase*2+.35)*.026*gait-neck.rotation.x)*Math.min(1,13*dt);
+      head.position.y=(lifeStage==='Senior'?.765:.79)+shoulderWave*bounce*.42;
+      head.rotation.x+=(Math.sin(movePhase*2+.85)*.016*gait-head.rotation.x)*Math.min(1,13*dt);
+
+      torso.rotation.y=Math.sin(movePhase)*.026*gait;
+      shoulders.rotation.y=-Math.sin(movePhase)*.050*gait;
+      haunches.rotation.y=Math.sin(movePhase)*.072*gait;
+      catRig.rotation.z=Math.sin(movePhase)*.010*gait+
+                        Math.sin(movePhase*.5)*.012*youth*gait;
     }else{
       for(const leg of legs){
+        leg.position.y+=(leg.userData.baseY-leg.position.y)*Math.min(1,14*dt);
+        leg.position.z+=(leg.userData.baseZ-leg.position.z)*Math.min(1,14*dt);
         leg.rotation.x*=Math.max(0,1-11*dt);
+        leg.rotation.z*=Math.max(0,1-12*dt);
         leg.userData.upper.rotation.x*=Math.max(0,1-12*dt);
         leg.userData.lower.rotation.x*=Math.max(0,1-13*dt);
         leg.userData.paw.rotation.x*=Math.max(0,1-14*dt);
-        leg.userData.paw.position.y+=(-.405-leg.userData.paw.position.y)*Math.min(1,14*dt);
-        leg.userData.paw.position.z+=(.055-leg.userData.paw.position.z)*Math.min(1,14*dt);
+        leg.userData.paw.position.y+=(leg.userData.basePawY-leg.userData.paw.position.y)*Math.min(1,14*dt);
+        leg.userData.paw.position.z+=(leg.userData.basePawZ-leg.userData.paw.position.z)*Math.min(1,14*dt);
       }
       torso.position.y+=(.53-torso.position.y)*Math.min(1,8*dt);
       shoulders.position.y+=(.56-shoulders.position.y)*Math.min(1,8*dt);
       haunches.position.y+=(.55-haunches.position.y)*Math.min(1,8*dt);
       shoulders.position.z+=(.34-shoulders.position.z)*Math.min(1,8*dt);
       haunches.position.z+=(-.32-haunches.position.z)*Math.min(1,8*dt);
+      haunches.rotation.x*=Math.max(0,1-8*dt);
       torso.rotation.y*=Math.max(0,1-7*dt);
       shoulders.rotation.y*=Math.max(0,1-7*dt);
       haunches.rotation.y*=Math.max(0,1-7*dt);
@@ -1298,8 +1383,10 @@ try{
     }
 
     if(!grooming && genuinelyIdle && idleSeconds>=nextGroomDelay){
-      const choices=['face','flank','privates','frontPaw','chest','earScratch','shoulder'];
-      grooming=choices[Math.floor(Math.random()*choices.length)];
+      const choices=['face','flank','privates','frontPaw','chest','earScratch','shoulder','hindPaw','belly','tailBase'];
+      const available=choices.filter(x=>x!==lastGrooming);
+      grooming=available[Math.floor(Math.random()*available.length)];
+      lastGrooming=grooming;
       groomingTime=0;
       groomingDuration=3.2+Math.random()*2.2;
       groomingSide=Math.random()<.5?-1:1;
@@ -1319,90 +1406,118 @@ try{
       const otherFront=groomingSide<0?legs[1]:legs[0];
       const hindLeg=groomingSide<0?legs[2]:legs[3];
 
-      // Make the whole kitten visibly settle into a grooming posture first.
       catRig.rotation.x+=(-.055-catRig.rotation.x)*Math.min(1,7*dt);
       torso.position.y+=(.485-torso.position.y)*Math.min(1,7*dt);
       shoulders.position.y+=(.515-shoulders.position.y)*Math.min(1,7*dt);
       haunches.position.y+=(.505-haunches.position.y)*Math.min(1,7*dt);
-      tailRoot.rotation.y+=((groomingSide*.20)-tailRoot.rotation.y)*Math.min(1,5*dt);
 
-      const lickTongue=()=>{
-        tongue.visible=lickPulse>.18;
-        tongue.position.y=-.170-lickPulse*.022;
-        tongue.position.z=.327+lickPulse*.025;
-        tongue.scale.y=.18+lickPulse*.34;
-        mouth.scale.y+=(.34-mouth.scale.y)*Math.min(1,16*dt);
+      const lickTongue=(amount=1)=>{
+        tongue.visible=lickPulse>.12;
+        tongue.position.y=-.170-lickPulse*.024*amount;
+        tongue.position.z=.327+lickPulse*.030*amount;
+        tongue.scale.y=.18+lickPulse*.40*amount;
+        mouth.scale.y+=(.38-mouth.scale.y)*Math.min(1,18*dt);
       };
 
       if(grooming==='face'){
-        // Classic cat face wash: lick paw, then sweep it over cheek/ear.
-        const wipe=Math.sin(g*4.8);
-        frontLeg.rotation.x+=(-1.12+wipe*.16-frontLeg.rotation.x)*Math.min(1,12*dt);
-        frontLeg.userData.upper.rotation.x+=(-.55-frontLeg.userData.upper.rotation.x)*Math.min(1,14*dt);
-        frontLeg.userData.lower.rotation.x+=(-1.02-frontLeg.userData.lower.rotation.x)*Math.min(1,15*dt);
-        frontLeg.userData.paw.rotation.x+=(.88+wipe*.18-frontLeg.userData.paw.rotation.x)*Math.min(1,16*dt);
-        otherFront.rotation.x+=(.10-otherFront.rotation.x)*Math.min(1,9*dt);
-        head.rotation.y+=(groomingSide*(.30+wipe*.12)-head.rotation.y)*Math.min(1,12*dt);
-        head.rotation.x+=(-.24+Math.abs(wipe)*.10-head.rotation.x)*Math.min(1,12*dt);
-        head.rotation.z+=(-groomingSide*(.18+wipe*.08)-head.rotation.z)*Math.min(1,12*dt);
-        lickTongue();
-      }else if(grooming==='flank'){
-        // Strong curl through spine and neck to reach the side of the body.
-        catRig.rotation.z+=(groomingSide*.10-catRig.rotation.z)*Math.min(1,8*dt);
-        torso.rotation.y+=(groomingSide*.35-torso.rotation.y)*Math.min(1,10*dt);
-        shoulders.rotation.y+=(-groomingSide*.24-shoulders.rotation.y)*Math.min(1,10*dt);
-        haunches.rotation.y+=(groomingSide*.30-haunches.rotation.y)*Math.min(1,10*dt);
-        neck.rotation.y+=(groomingSide*.58-neck.rotation.y)*Math.min(1,10*dt);
-        head.rotation.y+=(groomingSide*1.15-head.rotation.y)*Math.min(1,11*dt);
-        head.rotation.x+=(-.48+lickWave*.10-head.rotation.x)*Math.min(1,13*dt);
-        head.position.y+=(.72-head.position.y)*Math.min(1,8*dt);
-        lickTongue();
-      }else if(grooming==='privates'){
-        // Sit deeper, lift one hind leg and fold the head toward the belly.
-        catRig.rotation.x+=(-.13-catRig.rotation.x)*Math.min(1,9*dt);
-        haunches.position.y+=(.45-haunches.position.y)*Math.min(1,9*dt);
-        const hindTarget=groomingSide < 0 ? 0.86 : -0.86;
-        hindLeg.rotation.x+=(hindTarget-hindLeg.rotation.x)*Math.min(1,11*dt);
-        hindLeg.rotation.z+=(-groomingSide*.42-hindLeg.rotation.z)*Math.min(1,11*dt);
-        hindLeg.userData.lower.rotation.x+=(-.86-hindLeg.userData.lower.rotation.x)*Math.min(1,12*dt);
-        head.rotation.x+=(-.90+lickWave*.08-head.rotation.x)*Math.min(1,12*dt);
-        head.rotation.y+=(groomingSide*.42-head.rotation.y)*Math.min(1,11*dt);
-        head.position.y+=(.665-head.position.y)*Math.min(1,9*dt);
-        lickTongue();
+        // Paw is raised right up to the mouth, licked, then swept across face/ear.
+        const phase=(g*1.45)%1;
+        const licking=phase<.45;
+        const wipe=Math.sin(Math.min(1,(phase-.45)/.55)*Math.PI);
+        frontLeg.position.y+=(.64-frontLeg.position.y)*Math.min(1,14*dt);
+        frontLeg.position.z+=(.47-frontLeg.position.z)*Math.min(1,14*dt);
+        frontLeg.rotation.x+=(-.92-frontLeg.rotation.x)*Math.min(1,14*dt);
+        frontLeg.rotation.z+=(-groomingSide*.22-frontLeg.rotation.z)*Math.min(1,14*dt);
+        frontLeg.userData.lower.rotation.x+=(-.92-frontLeg.userData.lower.rotation.x)*Math.min(1,16*dt);
+        frontLeg.userData.paw.rotation.x+=(.92-frontLeg.userData.paw.rotation.x)*Math.min(1,18*dt);
+        head.rotation.y+=(groomingSide*(licking?.20:.38)-head.rotation.y)*Math.min(1,13*dt);
+        head.rotation.x+=((licking?-.52:-.20)-head.rotation.x)*Math.min(1,13*dt);
+        head.rotation.z+=(-groomingSide*(.10+wipe*.18)-head.rotation.z)*Math.min(1,13*dt);
+        if(licking)lickTongue(1.15);
       }else if(grooming==='frontPaw'){
-        frontLeg.rotation.x+=(-.96-frontLeg.rotation.x)*Math.min(1,12*dt);
-        frontLeg.userData.upper.rotation.x+=(-.40-frontLeg.userData.upper.rotation.x)*Math.min(1,13*dt);
-        frontLeg.userData.lower.rotation.x+=(-.88-frontLeg.userData.lower.rotation.x)*Math.min(1,14*dt);
-        frontLeg.userData.paw.rotation.x+=(.76-frontLeg.userData.paw.rotation.x)*Math.min(1,15*dt);
-        head.rotation.y+=(groomingSide*.30-head.rotation.y)*Math.min(1,11*dt);
-        head.rotation.x+=(-.56+lickWave*.11-head.rotation.x)*Math.min(1,13*dt);
-        lickTongue();
+        // The whole foreleg lifts; the muzzle follows the paw rather than licking empty air.
+        frontLeg.position.y+=(.66-frontLeg.position.y)*Math.min(1,14*dt);
+        frontLeg.position.z+=(.51-frontLeg.position.z)*Math.min(1,14*dt);
+        frontLeg.rotation.x+=(-1.06-frontLeg.rotation.x)*Math.min(1,14*dt);
+        frontLeg.rotation.z+=(-groomingSide*.15-frontLeg.rotation.z)*Math.min(1,14*dt);
+        frontLeg.userData.lower.rotation.x+=(-.86-frontLeg.userData.lower.rotation.x)*Math.min(1,16*dt);
+        frontLeg.userData.paw.rotation.x+=(.78-frontLeg.userData.paw.rotation.x)*Math.min(1,17*dt);
+        head.position.y+=(.735-head.position.y)*Math.min(1,12*dt);
+        head.rotation.y+=(groomingSide*.24-head.rotation.y)*Math.min(1,13*dt);
+        head.rotation.x+=(-.58+lickWave*.085-head.rotation.x)*Math.min(1,14*dt);
+        lickTongue(1.25);
+      }else if(grooming==='hindPaw'){
+        // Hind paw comes forward beside the belly; head bends directly onto it.
+        hindLeg.position.y+=(.56-hindLeg.position.y)*Math.min(1,12*dt);
+        hindLeg.position.z+=(-.04-hindLeg.position.z)*Math.min(1,12*dt);
+        hindLeg.rotation.x+=(-.72-hindLeg.rotation.x)*Math.min(1,13*dt);
+        hindLeg.rotation.z+=(-groomingSide*.48-hindLeg.rotation.z)*Math.min(1,13*dt);
+        hindLeg.userData.lower.rotation.x+=(-1.02-hindLeg.userData.lower.rotation.x)*Math.min(1,15*dt);
+        hindLeg.userData.paw.rotation.x+=(.72-hindLeg.userData.paw.rotation.x)*Math.min(1,16*dt);
+        head.position.y+=(.665-head.position.y)*Math.min(1,11*dt);
+        head.rotation.y+=(groomingSide*.58-head.rotation.y)*Math.min(1,12*dt);
+        head.rotation.x+=(-.78+lickWave*.09-head.rotation.x)*Math.min(1,13*dt);
+        lickTongue(1.2);
+      }else if(grooming==='flank'){
+        catRig.rotation.z+=(groomingSide*.11-catRig.rotation.z)*Math.min(1,9*dt);
+        torso.rotation.y+=(groomingSide*.38-torso.rotation.y)*Math.min(1,11*dt);
+        shoulders.rotation.y+=(-groomingSide*.25-shoulders.rotation.y)*Math.min(1,10*dt);
+        haunches.rotation.y+=(groomingSide*.34-haunches.rotation.y)*Math.min(1,10*dt);
+        neck.rotation.y+=(groomingSide*.62-neck.rotation.y)*Math.min(1,11*dt);
+        head.rotation.y+=(groomingSide*1.18-head.rotation.y)*Math.min(1,12*dt);
+        head.rotation.x+=(-.50+lickWave*.11-head.rotation.x)*Math.min(1,14*dt);
+        head.position.y+=(.70-head.position.y)*Math.min(1,10*dt);
+        lickTongue(1.05);
+      }else if(grooming==='privates'){
+        catRig.rotation.x+=(-.15-catRig.rotation.x)*Math.min(1,10*dt);
+        haunches.position.y+=(.445-haunches.position.y)*Math.min(1,10*dt);
+        hindLeg.position.y+=(.53-hindLeg.position.y)*Math.min(1,11*dt);
+        hindLeg.position.z+=(-.18-hindLeg.position.z)*Math.min(1,11*dt);
+        hindLeg.rotation.x+=((groomingSide < 0 ? 0.88 : -0.88)-hindLeg.rotation.x)*Math.min(1,12*dt);
+        hindLeg.rotation.z+=(-groomingSide*.48-hindLeg.rotation.z)*Math.min(1,12*dt);
+        head.position.y+=(.625-head.position.y)*Math.min(1,11*dt);
+        head.rotation.x+=(-1.00+lickWave*.075-head.rotation.x)*Math.min(1,13*dt);
+        head.rotation.y+=(groomingSide*.40-head.rotation.y)*Math.min(1,12*dt);
+        lickTongue(1.1);
+      }else if(grooming==='belly'){
+        catRig.rotation.x+=(-.12-catRig.rotation.x)*Math.min(1,9*dt);
+        torso.position.y+=(.455-torso.position.y)*Math.min(1,10*dt);
+        head.position.y+=(.645-head.position.y)*Math.min(1,11*dt);
+        head.rotation.x+=(-.94+lickWave*.09-head.rotation.x)*Math.min(1,13*dt);
+        head.rotation.y+=(slow*.13-head.rotation.y)*Math.min(1,11*dt);
+        lickTongue(1.18);
       }else if(grooming==='chest'){
-        shoulders.position.y+=(.49-shoulders.position.y)*Math.min(1,8*dt);
-        neck.rotation.x+=(-.30-neck.rotation.x)*Math.min(1,11*dt);
-        head.rotation.x+=(-.78+lickWave*.12-head.rotation.x)*Math.min(1,13*dt);
-        head.rotation.y+=(slow*.08-head.rotation.y)*Math.min(1,11*dt);
-        head.position.y+=(.69-head.position.y)*Math.min(1,9*dt);
-        lickTongue();
-      }else if(grooming==='earScratch'){
-        // One hind leg comes right up beside the ear and rapidly scratches.
-        const scratch=Math.sin(g*22);
-        hindLeg.rotation.x+=(-1.20-hindLeg.rotation.x)*Math.min(1,13*dt);
-        hindLeg.rotation.z+=(-groomingSide*.58-hindLeg.rotation.z)*Math.min(1,13*dt);
-        hindLeg.userData.upper.rotation.x+=(-.66-hindLeg.userData.upper.rotation.x)*Math.min(1,14*dt);
-        hindLeg.userData.lower.rotation.x+=(-1.04-hindLeg.userData.lower.rotation.x)*Math.min(1,16*dt);
-        hindLeg.userData.paw.rotation.x+=(scratch*.72-hindLeg.userData.paw.rotation.x)*Math.min(1,22*dt);
-        head.rotation.z+=(-groomingSide*.36-head.rotation.z)*Math.min(1,12*dt);
-        head.rotation.y+=(groomingSide*.22-head.rotation.y)*Math.min(1,11*dt);
-        earL.rotation.z+=((groomingSide<0?-.22:-.08)-earL.rotation.z)*Math.min(1,14*dt);
-        earR.rotation.z+=((groomingSide>0?.22:.08)-earR.rotation.z)*Math.min(1,14*dt);
+        shoulders.position.y+=(.485-shoulders.position.y)*Math.min(1,9*dt);
+        neck.rotation.x+=(-.32-neck.rotation.x)*Math.min(1,12*dt);
+        head.position.y+=(.675-head.position.y)*Math.min(1,10*dt);
+        head.rotation.x+=(-.82+lickWave*.11-head.rotation.x)*Math.min(1,14*dt);
+        head.rotation.y+=(slow*.08-head.rotation.y)*Math.min(1,12*dt);
+        lickTongue(1.15);
       }else if(grooming==='shoulder'){
-        torso.rotation.y+=(groomingSide*.18-torso.rotation.y)*Math.min(1,9*dt);
-        shoulders.rotation.y+=(-groomingSide*.22-shoulders.rotation.y)*Math.min(1,10*dt);
-        neck.rotation.y+=(groomingSide*.38-neck.rotation.y)*Math.min(1,10*dt);
-        head.rotation.y+=(groomingSide*.82-head.rotation.y)*Math.min(1,11*dt);
-        head.rotation.x+=(-.44+lickWave*.11-head.rotation.x)*Math.min(1,13*dt);
-        lickTongue();
+        torso.rotation.y+=(groomingSide*.20-torso.rotation.y)*Math.min(1,10*dt);
+        shoulders.rotation.y+=(-groomingSide*.25-shoulders.rotation.y)*Math.min(1,11*dt);
+        neck.rotation.y+=(groomingSide*.42-neck.rotation.y)*Math.min(1,11*dt);
+        head.rotation.y+=(groomingSide*.88-head.rotation.y)*Math.min(1,12*dt);
+        head.rotation.x+=(-.46+lickWave*.11-head.rotation.x)*Math.min(1,14*dt);
+        lickTongue(1.08);
+      }else if(grooming==='tailBase'){
+        haunches.rotation.y+=(groomingSide*.34-haunches.rotation.y)*Math.min(1,10*dt);
+        tailRoot.rotation.y+=(groomingSide*.56-tailRoot.rotation.y)*Math.min(1,10*dt);
+        tailRoot.rotation.x+=(.72-tailRoot.rotation.x)*Math.min(1,10*dt);
+        head.position.y+=(.69-head.position.y)*Math.min(1,10*dt);
+        head.rotation.y+=(groomingSide*1.28-head.rotation.y)*Math.min(1,12*dt);
+        head.rotation.x+=(-.54+lickWave*.10-head.rotation.x)*Math.min(1,13*dt);
+        lickTongue(1.05);
+      }else if(grooming==='earScratch'){
+        const scratch=Math.sin(g*23);
+        hindLeg.position.y+=(.59-hindLeg.position.y)*Math.min(1,13*dt);
+        hindLeg.position.z+=(.28-hindLeg.position.z)*Math.min(1,13*dt);
+        hindLeg.rotation.x+=(-1.18-hindLeg.rotation.x)*Math.min(1,14*dt);
+        hindLeg.rotation.z+=(-groomingSide*.62-hindLeg.rotation.z)*Math.min(1,14*dt);
+        hindLeg.userData.lower.rotation.x+=(-1.08-hindLeg.userData.lower.rotation.x)*Math.min(1,16*dt);
+        hindLeg.userData.paw.rotation.x+=(scratch*.80-hindLeg.userData.paw.rotation.x)*Math.min(1,24*dt);
+        head.rotation.z+=(-groomingSide*.38-head.rotation.z)*Math.min(1,13*dt);
+        head.rotation.y+=(groomingSide*.24-head.rotation.y)*Math.min(1,12*dt);
       }
 
       if(groomingTime>=groomingDuration){
@@ -1417,9 +1532,11 @@ try{
     idlePhase+=dt;
     const youthIdle=1-ageAdultness;
 
-    const tailBaseTarget=1.02 + (moving?.12:.20);
-    tailRoot.rotation.x+=(tailBaseTarget-tailRoot.rotation.x)*Math.min(1,6*dt);
-    tailRoot.rotation.y=Math.sin(t*(1.25+youthIdle*.45))*(moving?.14:.24);
+    if(grooming!=='tailBase'){
+      const tailBaseTarget=1.02 + (moving?.12:.20);
+      tailRoot.rotation.x+=(tailBaseTarget-tailRoot.rotation.x)*Math.min(1,6*dt);
+      tailRoot.rotation.y=Math.sin(t*(1.25+youthIdle*.45))*(moving?.14:.24);
+    }
 
     tailSegments.forEach((seg,i)=>{
       const along=i/Math.max(1,tailSegments.length-1);
@@ -1468,13 +1585,17 @@ try{
     camera.position.lerp(desiredCam,camBlend);
     camera.lookAt(target);
 
-    if(customOpen)status.textContent='Customising kitten';
+    if(!gameStarted)status.textContent='Press to start';
+    else if(customOpen)status.textContent='Customising kitten';
     else if(performance.now()<meowMouthUntil)status.textContent='Test Room • Meow!';
     else if(performance.now()<purrUntil)status.textContent='Test Room • Purring';
     else if(grooming==='face')status.textContent='Test Room • Washing face';
     else if(grooming==='flank')status.textContent='Test Room • Washing flank';
     else if(grooming==='privates')status.textContent='Test Room • Grooming';
-    else if(grooming==='frontPaw')status.textContent='Test Room • Washing paw';
+    else if(grooming==='frontPaw')status.textContent='Test Room • Washing front paw';
+    else if(grooming==='hindPaw')status.textContent='Test Room • Washing back paw';
+    else if(grooming==='belly')status.textContent='Test Room • Washing belly';
+    else if(grooming==='tailBase')status.textContent='Test Room • Washing tail';
     else if(grooming==='chest')status.textContent='Test Room • Washing chest';
     else if(grooming==='earScratch')status.textContent='Test Room • Scratching ear';
     else if(grooming==='shoulder')status.textContent='Test Room • Washing shoulder';
