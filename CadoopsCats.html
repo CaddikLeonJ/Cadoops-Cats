@@ -1559,6 +1559,7 @@ try{
   settingsBtn.addEventListener('pointerdown',()=>{
     if(!gameStarted)return;
     settingsOpen=true;
+    if(careAction)stopCareAction();
     move.x=move.y=0;
     runHeld=false;
     stopGrooming();
@@ -1703,6 +1704,7 @@ try{
 
   function openCustomiser(){
     markActive();
+    if(careAction)stopCareAction();
     customOpen=true;
     savedCameraYaw=cameraYaw;
     move.x=move.y=0;
@@ -1989,6 +1991,7 @@ try{
   function startSwipe(){
     if(!gameStarted||customOpen||settingsOpen||climbing||swipeActive)return;
     if(biscuitsActive)stopBiscuits();
+    if(careAction)stopCareAction();
     markActive();
 
     // Always alternate paws, while angle and force vary slightly each press.
@@ -2015,6 +2018,7 @@ try{
 
   function startBiscuits(){
     if(!bedInteractionAvailable||customOpen||settingsOpen)return;
+    if(careAction)stopCareAction();
     markActive();
     biscuitsActive=true;
     biscuitsTime=0;
@@ -2037,6 +2041,156 @@ try{
     e.stopPropagation();
     startBiscuits();
   });
+
+  function nearPoint(pos,radius=.85){
+    return Math.hypot(cat.position.x-pos.x,cat.position.z-pos.z)<radius &&
+           Math.abs(cat.position.y-pos.y)<.38;
+  }
+
+  function updateBowlVisuals(){
+    const food=Math.max(0,Math.min(1,catNeeds.foodLevel));
+    const water=Math.max(0,Math.min(1,catNeeds.waterLevel));
+    foodBowl.content.visible=food>.012;
+    waterBowl.content.visible=water>.012;
+    foodBowl.content.scale.y=.20+.80*food;
+    waterBowl.content.scale.y=.18+.82*water;
+    foodBowl.content.position.y=.105+.010*food;
+    waterBowl.content.position.y=.105+.010*water;
+    waterBowl.content.material.opacity=.35+.43*water;
+  }
+
+  function makePoop(){
+    const eaten=Math.max(.04,catNeeds.foodEatenSincePoop);
+    const load=Math.max(.06,Math.min(1,catNeeds.gutLoad));
+    const amount=Math.max(.08,Math.min(1,eaten*(.68+Math.random()*.42)+load*.16));
+    const overfed=Math.max(0,(eaten-.65)/.35);
+    const roll=Math.random();
+
+    let consistency;
+    if(roll<.08+overfed*.28)consistency='soft';
+    else if(roll<.23+overfed*.18)consistency='loose';
+    else if(roll<.60)consistency='normal';
+    else consistency='firm';
+
+    const baseColour=
+      consistency==='firm'?0x49301f:
+      consistency==='normal'?0x5a3824:
+      consistency==='soft'?0x6a4328:0x785238;
+
+    const pieces=
+      consistency==='firm'?2+Math.floor(Math.random()*3):
+      consistency==='normal'?1+Math.floor(Math.random()*3):
+      consistency==='soft'?1+Math.floor(Math.random()*2):1;
+
+    const meshes=[];
+    for(let i=0;i<pieces;i++){
+      const share=amount/pieces;
+      const rough=.82+Math.random()*.18;
+      const mat=new THREE.MeshStandardMaterial({
+        color:new THREE.Color(baseColour).multiplyScalar(.90+Math.random()*.18),
+        roughness:rough
+      });
+      const radius=.075+share*.11;
+      const m=new THREE.Mesh(new THREE.SphereGeometry(radius,12,9),mat);
+      const stretch=
+        consistency==='firm'?1.15+Math.random()*.42:
+        consistency==='normal'?1.25+Math.random()*.52:
+        consistency==='soft'?.95+Math.random()*.30:.72+Math.random()*.22;
+      m.scale.set(.86+Math.random()*.25,.48+Math.random()*.22,stretch);
+      m.position.set(
+        (Math.random()-.5)*.42,
+        .185+radius*.30,
+        (Math.random()-.5)*.28
+      );
+      m.rotation.y=Math.random()*Math.PI;
+      m.castShadow=true;
+      litterGroup.add(m);
+      meshes.push(m);
+    }
+
+    litterWaste.push({
+      type:'poop',
+      meshes,
+      amount,
+      consistency,
+      texture:consistency==='firm'?'dry/lumpy':consistency==='normal'?'formed':consistency==='soft'?'soft':'loose'
+    });
+    litterDirty=true;
+    catNeeds.gutLoad=Math.max(0,catNeeds.gutLoad-amount*.88);
+    catNeeds.foodEatenSincePoop=.02;
+  }
+
+  function makePee(){
+    const drunk=Math.max(.03,catNeeds.waterDrunkSincePee);
+    const bladder=Math.max(.04,Math.min(1,catNeeds.bladderLoad));
+    const amount=Math.max(.07,Math.min(1,drunk*.72+bladder*.34));
+    const hydration=Math.max(0,Math.min(1,drunk));
+    const dark=new THREE.Color(0xd2a22d);
+    const pale=new THREE.Color(0xf3e48b);
+    const peeMat=new THREE.MeshStandardMaterial({
+      color:dark.clone().lerp(pale,hydration),
+      roughness:.45,
+      transparent:true,
+      opacity:.58
+    });
+    const radius=.12+amount*.25;
+    const puddle=new THREE.Mesh(new THREE.CylinderGeometry(radius,radius*.94,.018,28),peeMat);
+    puddle.position.set((Math.random()-.5)*.16,.173,(Math.random()-.5)*.12);
+    puddle.receiveShadow=true;
+    litterGroup.add(puddle);
+    litterWaste.push({type:'pee',meshes:[puddle],amount,hydration});
+    litterDirty=true;
+    catNeeds.bladderLoad=Math.max(0,catNeeds.bladderLoad-amount*.92);
+    catNeeds.waterDrunkSincePee=.02;
+  }
+
+  function finishCareAction(){
+    const type=careAction;
+    if(type==='poop')makePoop();
+    if(type==='pee')makePee();
+    stopCareAction();
+    markActive();
+  }
+
+  function startCareAction(type){
+    if(!gameStarted||customOpen||settingsOpen||climbing||careAction)return;
+
+    if(type==='eat'&&(!nearPoint(foodBowlPos,.92)||catNeeds.foodLevel<=.015))return;
+    if(type==='drink'&&(!nearPoint(waterBowlPos,.92)||catNeeds.waterLevel<=.015))return;
+    if(type==='poop'&&(!nearPoint(litterPos,1.02)||catNeeds.gutLoad<.07))return;
+    if(type==='pee'&&(!nearPoint(litterPos,1.02)||catNeeds.bladderLoad<.055))return;
+
+    if(biscuitsActive)stopBiscuits();
+    stopGrooming();
+    swipeActive=false;
+    move.x=move.y=0;
+    currentSpeed=0;
+    runHeld=false;
+    vy=0;
+    onGround=true;
+
+    careAction=type;
+    careActionTime=0;
+    careActionDuration=type==='eat'?3.2:type==='drink'?3.0:type==='poop'?3.4:2.6;
+
+    if(type==='eat'||type==='drink'){
+      const p=type==='eat'?foodBowlPos:waterBowlPos;
+      cat.position.x=p.x;
+      cat.position.z=p.z+.43;
+      cat.position.y=0;
+      cat.rotation.y=Math.PI;
+    }else{
+      cat.position.x=litterPos.x;
+      cat.position.z=litterPos.z+.03;
+      cat.position.y=.16;
+      cat.rotation.y=0;
+    }
+  }
+
+  eatBtn.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();startCareAction('eat')});
+  drinkBtn.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();startCareAction('drink')});
+  poopBtn.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();startCareAction('poop')});
+  peeBtn.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();startCareAction('pee')});
 
   document.getElementById('jump').addEventListener('pointerdown',e=>{e.preventDefault();
     if(gameStarted && !customOpen && !settingsOpen && !climbing && onGround && lifeStage!=='Newborn'){
@@ -2094,7 +2248,7 @@ try{
     updateGrowth();
 
     const inputMag=Math.min(1,Math.hypot(move.x,move.y));
-    const moving=gameStarted && !customOpen && !settingsOpen && !biscuitsActive && !climbing && inputMag>.06;
+    const moving=gameStarted && !customOpen && !settingsOpen && !biscuitsActive && !careAction && !climbing && inputMag>.06;
 
     let desiredSpeed=0;
     if(moving && lifeStage!=='Newborn'){
@@ -2158,7 +2312,7 @@ try{
     const previousY=cat.position.y;
     if(climbing){
       updateClimb(dt);
-    }else if(!biscuitsActive){
+    }else if(!biscuitsActive&&!careAction){
       vy-=gravity*dt;
       cat.position.y+=vy*dt;
       if(vy<=0){
@@ -2188,6 +2342,8 @@ try{
 
     if(climbing){
       // updateClimb() owns the whole body/leg pose while attached to a surface.
+    }else if(careAction){
+      // Care actions own the body/leg pose while eating, drinking or toileting.
     }else if(currentSpeed>.08 && onGround){
       stopGrooming();
       idleSeconds=0;
@@ -2320,6 +2476,72 @@ try{
       }
     }
 
+    // --- Eat / drink / litter animations ---
+    if(careAction){
+      careActionTime+=dt;
+      const actionProgress=Math.min(1,careActionTime/careActionDuration);
+      const lick=Math.max(0,Math.sin(careActionTime*12.5));
+
+      if(careAction==='eat'||careAction==='drink'){
+        const eating=careAction==='eat';
+        torso.position.y+=(.49-torso.position.y)*Math.min(1,10*dt);
+        shoulders.position.y+=(.50-shoulders.position.y)*Math.min(1,11*dt);
+        haunches.position.y+=(.52-haunches.position.y)*Math.min(1,9*dt);
+        neck.rotation.x+=(-.28-neck.rotation.x)*Math.min(1,12*dt);
+        head.position.y+=(.61-head.position.y)*Math.min(1,12*dt);
+        head.rotation.x+=((eating?-.58:-.68)+Math.sin(careActionTime*9)*.035-head.rotation.x)*Math.min(1,14*dt);
+
+        for(const leg of [legs[0],legs[1]]){
+          leg.rotation.x+=(-.18-leg.rotation.x)*Math.min(1,12*dt);
+          leg.userData.lower.rotation.x+=(-.18-leg.userData.lower.rotation.x)*Math.min(1,14*dt);
+        }
+
+        if(eating){
+          const take=Math.min(catNeeds.foodLevel,dt*.105);
+          catNeeds.foodLevel-=take;
+          catNeeds.gutLoad=Math.min(1,catNeeds.gutLoad+take*.94);
+          catNeeds.foodEatenSincePoop=Math.min(1,catNeeds.foodEatenSincePoop+take);
+          mouth.scale.y+=(.30+lick*.18-mouth.scale.y)*Math.min(1,18*dt);
+        }else{
+          const take=Math.min(catNeeds.waterLevel,dt*.115);
+          catNeeds.waterLevel-=take;
+          catNeeds.bladderLoad=Math.min(1,catNeeds.bladderLoad+take*.95);
+          catNeeds.waterDrunkSincePee=Math.min(1,catNeeds.waterDrunkSincePee+take);
+          tongue.visible=lick>.12;
+          tongue.position.y=-.174-lick*.018;
+          tongue.position.z=.333+lick*.031;
+          tongue.scale.y=.20+lick*.38;
+          mouth.scale.y+=(.28+lick*.16-mouth.scale.y)*Math.min(1,18*dt);
+        }
+
+        if((eating&&catNeeds.foodLevel<=.001)||(!eating&&catNeeds.waterLevel<=.001)){
+          careActionTime=careActionDuration;
+        }
+      }else{
+        // Toilet posture: crouched rear, flexed hind legs, tail raised clear of the tray.
+        torso.position.y+=(.465-torso.position.y)*Math.min(1,10*dt);
+        shoulders.position.y+=(.50-shoulders.position.y)*Math.min(1,10*dt);
+        haunches.position.y+=(.405-haunches.position.y)*Math.min(1,12*dt);
+        haunches.rotation.x+=(-.16-haunches.rotation.x)*Math.min(1,10*dt);
+        head.position.y+=(.73-head.position.y)*Math.min(1,9*dt);
+        head.rotation.x+=(-.08-head.rotation.x)*Math.min(1,9*dt);
+        tailRoot.rotation.x+=(1.30-tailRoot.rotation.x)*Math.min(1,12*dt);
+
+        for(const leg of [legs[2],legs[3]]){
+          leg.rotation.x+=(.50-leg.rotation.x)*Math.min(1,12*dt);
+          leg.userData.lower.rotation.x+=(-.62-leg.userData.lower.rotation.x)*Math.min(1,14*dt);
+          leg.userData.paw.rotation.x+=(.28-leg.userData.paw.rotation.x)*Math.min(1,14*dt);
+        }
+
+        const strain=careAction==='poop'?Math.sin(careActionTime*4.2)*.012:Math.sin(careActionTime*5.5)*.006;
+        torso.position.y+=strain;
+      }
+
+      updateBowlVisuals();
+
+      if(actionProgress>=1)finishCareAction();
+    }
+
     // --- Swipe animation ---
     if(swipeActive){
       swipeTime+=dt;
@@ -2353,7 +2575,7 @@ try{
     // --- Idle grooming ---
     // After five seconds with no movement/input, pick a different cat grooming
     // behaviour at random. Any player activity immediately interrupts it.
-    const genuinelyIdle=!customOpen && !settingsOpen && !biscuitsActive && !swipeActive && !climbing && onGround && currentSpeed<.035 && !moving;
+    const genuinelyIdle=!customOpen && !settingsOpen && !biscuitsActive && !careAction && !swipeActive && !climbing && onGround && currentSpeed<.035 && !moving;
     if(genuinelyIdle){
       idleSeconds+=dt;
     }else{
@@ -2506,13 +2728,26 @@ try{
       }
     }
 
-    // --- Cat bed / biscuit making ---
+    // --- Context actions + cat bed / biscuit making ---
     const bedDistance=Math.hypot(cat.position.x-catBedPos.x,cat.position.z-catBedPos.z);
+    const actionsAllowed=gameStarted&&!customOpen&&!settingsOpen&&!biscuitsActive&&!careAction&&!swipeActive&&!climbing;
+
     bedInteractionAvailable=
-      gameStarted && !customOpen && !settingsOpen && !biscuitsActive && !swipeActive && !climbing &&
-      bedDistance<1.05 && Math.abs(cat.position.y-CAT_BED_TOP)<.34;
+      actionsAllowed && bedDistance<1.05 && Math.abs(cat.position.y-CAT_BED_TOP)<.34;
+
+    const foodAvailable=actionsAllowed && nearPoint(foodBowlPos,.92) && catNeeds.foodLevel>.015;
+    const drinkAvailable=actionsAllowed && nearPoint(waterBowlPos,.92) && catNeeds.waterLevel>.015;
+    const litterNear=actionsAllowed && nearPoint(litterPos,1.02);
+    const poopAvailable=litterNear && catNeeds.gutLoad>=.07;
+    const peeAvailable=litterNear && catNeeds.bladderLoad>=.055;
 
     interactBtn.style.display=bedInteractionAvailable?'block':'none';
+    eatBtn.style.display=foodAvailable?'block':'none';
+    drinkBtn.style.display=drinkAvailable?'block':'none';
+    poopBtn.style.display=poopAvailable?'block':'none';
+    peeBtn.style.display=peeAvailable?'block':'none';
+
+    updateBowlVisuals();
 
     if(biscuitsActive){
       biscuitsTime+=dt;
@@ -2559,7 +2794,7 @@ try{
     idlePhase+=dt;
     const youthIdle=1-ageAdultness;
 
-    if(!climbing&&grooming!=='tailBase'){
+    if(!climbing&&!careAction&&grooming!=='tailBase'){
       const tailBaseTarget=1.02 + (moving?.12:.20);
       tailRoot.rotation.x+=(tailBaseTarget-tailRoot.rotation.x)*Math.min(1,6*dt);
       tailRoot.rotation.y=Math.sin(t*(1.25+youthIdle*.45))*(moving?.14:.24);
@@ -2583,7 +2818,7 @@ try{
     }else{
       chest.scale.y+=(1.10-chest.scale.y)*Math.min(1,10*dt);
     }
-    if(!grooming&&!swipeActive&&!climbing){
+    if(!grooming&&!careAction&&!swipeActive&&!climbing){
       head.rotation.y=Math.sin(t*.72)*.055*idleCuriosity;
       if(currentSpeed<=.08)head.rotation.x=Math.sin(t*.91)*.025*idleCuriosity;
       head.rotation.z=Math.sin(movePhase)*.010*gait + Math.sin(t*.63)*.012*idleCuriosity;
@@ -2615,6 +2850,25 @@ try{
       toy.mesh.position.z=Math.max(-7.9,Math.min(7.9,toy.mesh.position.z));
     }
 
+    // Empty bowls and dirty litter automatically create household chores.
+    if(gameStarted){
+      if(catNeeds.foodLevel<=.01&&!refillFoodRequested){
+        if(assignHouseholdTask('refillFood',new THREE.Vector3(foodBowlPos.x,0,foodBowlPos.z+.55))){
+          refillFoodRequested=true;
+        }
+      }
+      if(catNeeds.waterLevel<=.01&&!refillWaterRequested){
+        if(assignHouseholdTask('refillWater',new THREE.Vector3(waterBowlPos.x,0,waterBowlPos.z+.55))){
+          refillWaterRequested=true;
+        }
+      }
+      if(litterDirty&&!litterCleanRequested){
+        if(assignHouseholdTask('cleanLitter',new THREE.Vector3(litterPos.x,0,litterPos.z+.72))){
+          litterCleanRequested=true;
+        }
+      }
+    }
+
     // Placeholder household residents continue their routines independently.
     if(gameStarted&&!settingsOpen&&!customOpen){
       updateHuman(man,dt);
@@ -2640,27 +2894,31 @@ try{
 
     if(!gameStarted)status.textContent='Press to start';
     else if(biscuitsActive)status.textContent='Cat Bed • Making biscuits • Purring';
+    else if(careAction==='eat')status.textContent='Kitchen • Eating';
+    else if(careAction==='drink')status.textContent='Kitchen • Drinking';
+    else if(careAction==='poop')status.textContent='Bathroom • Using litter tray';
+    else if(careAction==='pee')status.textContent='Bathroom • Using litter tray';
     else if(bedInteractionAvailable)status.textContent='Cat Bed • Make Biscuits';
     else if(climbing)status.textContent='House • Climbing';
     else if(swipeActive)status.textContent='House • Swipe!';
     else if(customOpen)status.textContent='Customising kitten';
-    else if(performance.now()<meowMouthUntil)status.textContent='Test Room • Meow!';
-    else if(performance.now()<purrUntil)status.textContent='Test Room • Purring';
-    else if(grooming==='face')status.textContent='Test Room • Washing face';
-    else if(grooming==='flank')status.textContent='Test Room • Washing flank';
-    else if(grooming==='privates')status.textContent='Test Room • Grooming';
-    else if(grooming==='frontPaw')status.textContent='Test Room • Washing front paw';
-    else if(grooming==='hindPaw')status.textContent='Test Room • Washing back paw';
-    else if(grooming==='belly')status.textContent='Test Room • Washing belly';
-    else if(grooming==='tailBase')status.textContent='Test Room • Washing tail';
-    else if(grooming==='chest')status.textContent='Test Room • Washing chest';
-    else if(grooming==='earScratch')status.textContent='Test Room • Scratching ear';
-    else if(grooming==='shoulder')status.textContent='Test Room • Washing shoulder';
-    else if(!onGround)status.textContent='Test Room • Jumping';
-    else if(tired && runHeld)status.textContent='Test Room • Little legs are tired';
-    else if(currentSpeed>2.5)status.textContent='Test Room • Running';
-    else if(currentSpeed>.12)status.textContent='Test Room • Walking';
-    else status.textContent='Test Room • '+lifeStage;
+    else if(performance.now()<meowMouthUntil)status.textContent='House • Meow!';
+    else if(performance.now()<purrUntil)status.textContent='House • Purring';
+    else if(grooming==='face')status.textContent='House • Washing face';
+    else if(grooming==='flank')status.textContent='House • Washing flank';
+    else if(grooming==='privates')status.textContent='House • Grooming';
+    else if(grooming==='frontPaw')status.textContent='House • Washing front paw';
+    else if(grooming==='hindPaw')status.textContent='House • Washing back paw';
+    else if(grooming==='belly')status.textContent='House • Washing belly';
+    else if(grooming==='tailBase')status.textContent='House • Washing tail';
+    else if(grooming==='chest')status.textContent='House • Washing chest';
+    else if(grooming==='earScratch')status.textContent='House • Scratching ear';
+    else if(grooming==='shoulder')status.textContent='House • Washing shoulder';
+    else if(!onGround)status.textContent='House • Jumping';
+    else if(tired && runHeld)status.textContent='House • Little legs are tired';
+    else if(currentSpeed>2.5)status.textContent='House • Running';
+    else if(currentSpeed>.12)status.textContent='House • Walking';
+    else status.textContent='House • '+lifeStage;
 
     renderer.render(scene,camera);
   }
