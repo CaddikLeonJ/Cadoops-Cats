@@ -41,6 +41,11 @@ button{appearance:none;-webkit-appearance:none}
 #customCard .sub{margin:0 0 14px;font-size:12px;opacity:.68}
 .customGroup{margin:13px 0}
 .customLabel{font-size:13px;font-weight:800;margin-bottom:8px}
+.customSubLabel{font-size:11px;font-weight:800;opacity:.72;margin:9px 0 6px}
+.editorSlider{width:100%;accent-color:#222;touch-action:pan-x}
+.sliderValue{font-size:12px;font-weight:800;float:right}
+.humanEditor{margin-top:10px;padding:12px;background:#ffffff8c;border:1px solid #0001;border-radius:14px}
+.humanEditorTitle{font-size:14px;font-weight:900;margin-bottom:8px}
 .choiceRow{display:flex;flex-wrap:wrap;gap:8px}
 .choice{min-height:42px;border:2px solid #0002;border-radius:12px;background:white;color:#222;padding:8px 11px;font-weight:700;touch-action:manipulation}
 .choice.selected{border-color:#222;box-shadow:0 0 0 1px #222 inset}
@@ -66,7 +71,7 @@ button{appearance:none;-webkit-appearance:none}
 </div>
 
 <div id="hud">
-  <div id="brand">Cadoops' Cats<div id="ver">Prototype v0.2.2</div><div id="age">Kitten • 10 weeks</div></div>
+  <div id="brand">Cadoops' Cats<div id="ver">Prototype v0.3.0</div><div id="age">Kitten • 10 weeks</div></div>
   <div id="status">Loading 3D world…</div>
   <div id="stick"><div id="knob"></div></div>
   <button class="btn" id="jump">JUMP</button>
@@ -172,6 +177,40 @@ button{appearance:none;-webkit-appearance:none}
         <button class="swatch selected" data-nose="pink" aria-label="Pink nose" style="background:#d68d89"></button>
         <button class="swatch" data-nose="black" aria-label="Black nose" style="background:#252525"></button>
         <button class="swatch" data-nose="brown" aria-label="Brown nose" style="background:#6c4637"></button>
+      </div>
+    </div>
+
+    <div class="customGroup">
+      <div class="customLabel">Body weight <span class="sliderValue" id="catWeightValue">50 / 100</span></div>
+      <input class="editorSlider" id="catWeight" type="range" min="0" max="100" value="50" step="1" aria-label="Cat body weight">
+      <div class="customSubLabel">0 = very thin • 50 = average • 100 = very chunky</div>
+    </div>
+
+    <div class="customGroup">
+      <div class="customLabel">Household placeholders</div>
+
+      <div class="humanEditor" data-human-editor="man">
+        <div class="humanEditorTitle">Man</div>
+        <div class="customSubLabel">Top</div><div class="choiceRow" id="manShirtChoices"></div>
+        <div class="customSubLabel">Trousers</div><div class="choiceRow" id="manTrouserChoices"></div>
+        <div class="customSubLabel">Hair</div><div class="choiceRow" id="manHairChoices"></div>
+        <div class="customSubLabel">Skin</div><div class="choiceRow" id="manSkinChoices"></div>
+      </div>
+
+      <div class="humanEditor" data-human-editor="woman">
+        <div class="humanEditorTitle">Woman</div>
+        <div class="customSubLabel">Top</div><div class="choiceRow" id="womanShirtChoices"></div>
+        <div class="customSubLabel">Trousers</div><div class="choiceRow" id="womanTrouserChoices"></div>
+        <div class="customSubLabel">Hair</div><div class="choiceRow" id="womanHairChoices"></div>
+        <div class="customSubLabel">Skin</div><div class="choiceRow" id="womanSkinChoices"></div>
+      </div>
+
+      <div class="humanEditor" data-human-editor="teen">
+        <div class="humanEditorTitle">Teenager</div>
+        <div class="customSubLabel">Top</div><div class="choiceRow" id="teenShirtChoices"></div>
+        <div class="customSubLabel">Trousers</div><div class="choiceRow" id="teenTrouserChoices"></div>
+        <div class="customSubLabel">Hair</div><div class="choiceRow" id="teenHairChoices"></div>
+        <div class="customSubLabel">Skin</div><div class="choiceRow" id="teenSkinChoices"></div>
       </div>
     </div>
 
@@ -697,6 +736,7 @@ try{
     scene.add(human);
     human.userData.legs=legs;
     human.userData.arms=arms;
+    human.userData.materials={skin:skinMat,shirt:shirtMat,trousers:trouserMat,hair:hairMat};
     human.userData.walkPhase=0;
     human.userData.routeIndex=0;
     human.userData.health=100;
@@ -709,8 +749,10 @@ try{
 
   const man=makeHuman({shirt:0x496f91,trousers:0x34373b,hair:0x493226,height:1.83});
   const woman=makeHuman({shirt:0x8e4d61,trousers:0x2f3135,hair:0x8a3f35,height:1.67});
+  const teen=makeHuman({shirt:0x4f8a62,trousers:0x3f4750,hair:0x59402f,skin:0xd7a985,height:1.48});
   man.position.set(-.5,0,.2);
   woman.position.set(3.6,0,5.8);
+  teen.position.set(5.9,0,-.2);
 
   man.userData.route=[
     new THREE.Vector3(-.5,0,.2),new THREE.Vector3(2.4,0,.3),
@@ -721,6 +763,11 @@ try{
     new THREE.Vector3(3.6,0,5.8),new THREE.Vector3(6.6,0,5.4),
     new THREE.Vector3(6.4,0,1.0),new THREE.Vector3(3.0,0,1.0),
     new THREE.Vector3(1.6,0,4.2)
+  ];
+  teen.userData.route=[
+    new THREE.Vector3(5.9,0,-.2),new THREE.Vector3(7.0,0,3.5),
+    new THREE.Vector3(4.2,0,4.7),new THREE.Vector3(2.6,0,1.8),
+    new THREE.Vector3(4.7,0,-.4)
   ];
 
   function updateHuman(h,dt){
@@ -1066,7 +1113,8 @@ try{
     secondary:'white',
     pattern:'tuxedo',
     eyes:'green',
-    nose:'pink'
+    nose:'pink',
+    weight:50
   };
 
   function darkerColour(hex){
@@ -1236,15 +1284,18 @@ try{
     ageAdultness=smooth01(ageWeeks/52);
 
     let overall;
-    if(ageWeeks<4)overall=mix(.28,.43,smooth01(ageWeeks/4));
-    else if(ageWeeks<26)overall=mix(.43,.68,smooth01((ageWeeks-4)/22));
-    else if(ageWeeks<52)overall=mix(.68,1.0,smooth01((ageWeeks-26)/26));
+    if(ageWeeks<4)overall=mix(.22,.34,smooth01(ageWeeks/4));
+    else if(ageWeeks<26)overall=mix(.34,.61,smooth01((ageWeeks-4)/22));
+    else if(ageWeeks<52)overall=mix(.61,1.0,smooth01((ageWeeks-26)/26));
     else overall=1.0;
 
     visualScale=overall;
     catRig.scale.setScalar(overall);
 
     const youth=1-ageAdultness;
+    const weightNorm=(catAppearance.weight-50)/50;
+    const bodyWidth=1+weightNorm*.25;
+    const bodyDepth=1+weightNorm*.16;
 
     // Kitten head stays proportionally larger while the body catches up.
     head.scale.setScalar(mix(1.0,1.24,youth));
@@ -1262,14 +1313,20 @@ try{
     legs.forEach(leg=>{
       leg.scale.y=legY;
       leg.position.y=mix(.43,.39,youth);
+      leg.position.x=leg.userData.baseX*bodyWidth;
     });
 
+    torso.scale.x=.58*bodyWidth;
     torso.scale.z=mix(.98,.92,youth);
-    torso.scale.y=mix(.50,.56,youth);
-    haunches.scale.x=mix(.76,.72,youth);
-    haunches.scale.y=mix(.80,.76,youth);
-    haunches.scale.z=mix(.80,.75,youth);
+    torso.scale.y=mix(.50,.56,youth)*bodyDepth;
+    shoulders.scale.x=.82*bodyWidth;
+    shoulders.scale.y=.82*bodyDepth;
     shoulders.scale.z=mix(.82,.78,youth);
+    haunches.scale.x=mix(.76,.72,youth)*bodyWidth;
+    haunches.scale.y=mix(.80,.76,youth)*bodyDepth;
+    haunches.scale.z=mix(.80,.75,youth);
+    neck.scale.x=.82*mix(1,1.08,Math.max(0,weightNorm));
+    chest.scale.x=.65*bodyWidth;
 
     const tailRel=mix(1.0,.80,youth);
     tailRoot.scale.setScalar(tailRel);
@@ -1308,6 +1365,13 @@ try{
   let lastSwipePaw=1;
   let swipeAngleVariation=0;
   let swipeStrength=1;
+  let climbing=false;
+  let climbSurface=null;
+  let climbTime=0;
+  let climbDuration=1;
+  let climbStartX=0,climbStartY=0,climbStartZ=0;
+  let climbEndX=0,climbEndY=0,climbEndZ=0;
+  let climbFacing=0;
   let bedInteractionAvailable=false;
   let biscuitsActive=false;
   let biscuitsTime=0;
@@ -1350,6 +1414,108 @@ try{
     idleSeconds=0;
     nextGroomDelay=5;
     stopGrooming();
+  }
+
+  function findClimbCandidate(x,z,y){
+    let best=null,bestDist=Infinity;
+    const maxRise=mix(.82,1.18,ageAdultness);
+    for(const s of climbSurfaces){
+      const rise=s.top-y;
+      if(rise<.12||rise>maxRise)continue;
+
+      const nearestX=Math.max(s.x-s.w/2,Math.min(s.x+s.w/2,x));
+      const nearestZ=Math.max(s.z-s.d/2,Math.min(s.z+s.d/2,z));
+      const dx=nearestX-x,dz=nearestZ-z;
+      const dist=Math.hypot(dx,dz);
+      if(dist>.34||dist>=bestDist)continue;
+      best=s;
+      bestDist=dist;
+    }
+    return best;
+  }
+
+  function beginClimb(surface){
+    if(climbing||!surface)return;
+    stopGrooming();
+    if(biscuitsActive)stopBiscuits();
+    swipeActive=false;
+    move.x=move.y=0;
+    runHeld=false;
+    currentSpeed=0;
+    vy=0;
+    onGround=false;
+
+    climbing=true;
+    climbSurface=surface;
+    climbTime=0;
+    climbStartX=cat.position.x;
+    climbStartY=cat.position.y;
+    climbStartZ=cat.position.z;
+    climbEndY=surface.top;
+
+    const cx=surface.x,cz=surface.z;
+    const dx=cx-climbStartX,dz=cz-climbStartZ;
+    const len=Math.hypot(dx,dz)||1;
+    const nx=dx/len,nz=dz/len;
+    climbFacing=Math.atan2(nx,nz);
+    cat.rotation.y=climbFacing;
+
+    // Pull just onto the top surface at the end of the climb.
+    climbEndX=Math.max(surface.x-surface.w/2+.13,
+      Math.min(surface.x+surface.w/2-.13,climbStartX+nx*.30));
+    climbEndZ=Math.max(surface.z-surface.d/2+.13,
+      Math.min(surface.z+surface.d/2-.13,climbStartZ+nz*.30));
+
+    const rise=Math.max(.12,climbEndY-climbStartY);
+    climbDuration=.70+rise*.78;
+  }
+
+  function updateClimb(dt){
+    if(!climbing)return;
+    climbTime+=dt;
+    const p=Math.min(1,climbTime/climbDuration);
+    const smooth=p*p*(3-2*p);
+
+    // Stay near the face while climbing, then pull the body over the lip.
+    const pull=Math.max(0,(p-.70)/.30);
+    cat.position.x=mix(climbStartX,climbEndX,pull*pull*(3-2*pull));
+    cat.position.z=mix(climbStartZ,climbEndZ,pull*pull*(3-2*pull));
+    cat.position.y=mix(climbStartY,climbEndY,smooth);
+
+    const verticalIn=Math.min(1,p/.18);
+    const verticalOut=Math.max(0,(p-.72)/.28);
+    const verticalAmount=Math.min(verticalIn,1-verticalOut);
+    catRig.rotation.x=-Math.PI*.48*verticalAmount;
+
+    const climbBeat=Math.sin(climbTime*12.5);
+    const altA=Math.max(0,climbBeat);
+    const altB=Math.max(0,-climbBeat);
+    const limbLift=[altA,altB,altB,altA];
+
+    legs.forEach((leg,i)=>{
+      const front=leg.userData.isFront;
+      const lift=limbLift[i];
+      leg.rotation.x+=((front?-.62:.42)+(lift-.5)*.40-leg.rotation.x)*Math.min(1,18*dt);
+      leg.userData.lower.rotation.x+=((- .52-lift*.36)-leg.userData.lower.rotation.x)*Math.min(1,20*dt);
+      leg.userData.paw.rotation.x+=((.26+lift*.30)-leg.userData.paw.rotation.x)*Math.min(1,22*dt);
+      leg.position.z+=(leg.userData.baseZ+(front?.08:-.04)*lift-leg.position.z)*Math.min(1,18*dt);
+    });
+    head.rotation.x+=(-.10-head.rotation.x)*Math.min(1,12*dt);
+    tailRoot.rotation.x+=(.45-tailRoot.rotation.x)*Math.min(1,10*dt);
+
+    if(p>=1){
+      climbing=false;
+      climbSurface=null;
+      cat.position.set(climbEndX,climbEndY,climbEndZ);
+      catRig.rotation.x=0;
+      vy=0;
+      onGround=true;
+      legs.forEach(leg=>{
+        leg.position.y=leg.userData.baseY;
+        leg.position.z=leg.userData.baseZ;
+      });
+      markActive();
+    }
   }
 
   function markSelected(groupSelector,dataName,value){
@@ -1410,12 +1576,63 @@ try{
     applyAppearance();
   }));
 
+  const catWeightSlider=document.getElementById('catWeight');
+  const catWeightValue=document.getElementById('catWeightValue');
+  function setCatWeight(v){
+    const n=Math.max(0,Math.min(100,Number(v)||0));
+    catAppearance.weight=n;
+    catWeightSlider.value=String(Math.round(n));
+    catWeightValue.textContent=Math.round(n)+' / 100';
+    updateGrowth();
+  }
+  catWeightSlider.addEventListener('input',e=>{
+    e.stopPropagation();
+    setCatWeight(e.target.value);
+  });
+  setCatWeight(50);
+
+  const humanColourPalettes={
+    shirt:[0x496f91,0x8e4d61,0x4f8a62,0xc97938,0x7a5aaa,0xdf75a8,0x222426,0xe7e4dc],
+    trousers:[0x34373b,0x46505a,0x624d3c,0x1f2630,0x6a6a68,0x242424],
+    hair:[0x2d211b,0x59402f,0x8a3f35,0xb58a52,0xd8c692,0x1f1d1c,0x77716d],
+    skin:[0xf0c9a8,0xd9ad89,0xc88f68,0xa96d4b,0x7f4f38,0x563524]
+  };
+  const household={man,woman,teen};
+
+  function colourHex(n){return '#'+n.toString(16).padStart(6,'0')}
+  function buildHumanColourRow(person,part){
+    const host=document.getElementById(person+(
+      part==='shirt'?'Shirt':part==='trousers'?'Trouser':part==='hair'?'Hair':'Skin'
+    )+'Choices');
+    if(!host)return;
+    humanColourPalettes[part].forEach((hex,index)=>{
+      const b=document.createElement('button');
+      b.className='swatch'+(index===0?' selected':'');
+      b.style.background=colourHex(hex);
+      b.dataset.human=person;
+      b.dataset.humanPart=part;
+      b.dataset.humanColour=String(hex);
+      b.setAttribute('aria-label',person+' '+part+' colour');
+      b.addEventListener('pointerdown',e=>{
+        e.preventDefault();
+        e.stopPropagation();
+        const h=household[person];
+        h.userData.materials[part].color.setHex(hex);
+        host.querySelectorAll('button').forEach(x=>x.classList.toggle('selected',x===b));
+      });
+      host.appendChild(b);
+    });
+  }
+  for(const person of ['man','woman','teen']){
+    for(const part of ['shirt','trousers','hair','skin'])buildHumanColourRow(person,part);
+  }
+
   const stick=document.getElementById('stick');
   const knob=document.getElementById('knob');
   let sid=null;
 
   function stickMove(e){
-    if(!gameStarted||customOpen||settingsOpen)return;
+    if(!gameStarted||customOpen||settingsOpen||climbing)return;
     if(biscuitsActive)stopBiscuits();
     markActive();
     const r=stick.getBoundingClientRect();
@@ -1516,7 +1733,7 @@ try{
   }
 
   function playMeow(){
-    if(!gameStarted||customOpen||settingsOpen)return;
+    if(!gameStarted||customOpen||settingsOpen||climbing)return;
     markActive();
     meowMouthUntil=performance.now()+620;
     // No pause(), seek or shared Audio element: every press is independent.
@@ -1524,7 +1741,7 @@ try{
   }
 
   function playPurr(){
-    if(!gameStarted||customOpen||settingsOpen)return;
+    if(!gameStarted||customOpen||settingsOpen||climbing)return;
     markActive();
     purrUntil=Math.max(purrUntil,performance.now()+4000);
     playBuffer(purrBuffer,1);
@@ -1574,7 +1791,7 @@ try{
     }
 
     // Placeholder humans can be swatted too: they lose health and stagger back.
-    for(const h of [man,woman]){
+    for(const h of [man,woman,teen]){
       const dx=h.position.x-p.x;
       const dz=h.position.z-p.z;
       const d=Math.hypot(dx,dz);
@@ -1591,7 +1808,7 @@ try{
   }
 
   function startSwipe(){
-    if(!gameStarted||customOpen||settingsOpen||swipeActive)return;
+    if(!gameStarted||customOpen||settingsOpen||climbing||swipeActive)return;
     if(biscuitsActive)stopBiscuits();
     markActive();
 
@@ -1655,7 +1872,7 @@ try{
 
   let lookId=null,lastX=0;
   renderer.domElement.addEventListener('pointerdown',e=>{
-    if(!gameStarted||customOpen||settingsOpen)return;
+    if(!gameStarted||customOpen||settingsOpen||climbing)return;
     if(biscuitsActive)stopBiscuits();
     markActive();
     lookId=e.pointerId;
@@ -1696,7 +1913,7 @@ try{
     updateGrowth();
 
     const inputMag=Math.min(1,Math.hypot(move.x,move.y));
-    const moving=gameStarted && !customOpen && !settingsOpen && !biscuitsActive && inputMag>.06;
+    const moving=gameStarted && !customOpen && !settingsOpen && !biscuitsActive && !climbing && inputMag>.06;
 
     let desiredSpeed=0;
     if(moving && lifeStage!=='Newborn'){
@@ -1744,12 +1961,23 @@ try{
 
     cat.position.x=Math.max(-8.65,Math.min(8.65,cat.position.x));
     cat.position.z=Math.max(-8.15,Math.min(8.15,cat.position.z));
-    resolveHouseCollision(previousX,previousZ);
+
+    if(moving&&!climbing){
+      const candidate=findClimbCandidate(cat.position.x,cat.position.z,cat.position.y);
+      if(candidate && collidesWithSolid(cat.position.x,cat.position.z,cat.position.y)){
+        cat.position.x=previousX;
+        cat.position.z=previousZ;
+        beginClimb(candidate);
+      }
+    }
+    if(!climbing)resolveHouseCollision(previousX,previousZ);
 
     // Jump / gravity with real furniture/platform landing.
     const gravity=mix(8.1,8.9,ageAdultness);
     const previousY=cat.position.y;
-    if(!biscuitsActive){
+    if(climbing){
+      updateClimb(dt);
+    }else if(!biscuitsActive){
       vy-=gravity*dt;
       cat.position.y+=vy*dt;
       if(vy<=0){
@@ -1942,7 +2170,7 @@ try{
     // --- Idle grooming ---
     // After five seconds with no movement/input, pick a different cat grooming
     // behaviour at random. Any player activity immediately interrupts it.
-    const genuinelyIdle=!customOpen && !settingsOpen && !biscuitsActive && !swipeActive && onGround && currentSpeed<.035 && !moving;
+    const genuinelyIdle=!customOpen && !settingsOpen && !biscuitsActive && !swipeActive && !climbing && onGround && currentSpeed<.035 && !moving;
     if(genuinelyIdle){
       idleSeconds+=dt;
     }else{
@@ -2098,7 +2326,7 @@ try{
     // --- Cat bed / biscuit making ---
     const bedDistance=Math.hypot(cat.position.x-catBedPos.x,cat.position.z-catBedPos.z);
     bedInteractionAvailable=
-      gameStarted && !customOpen && !settingsOpen && !biscuitsActive && !swipeActive &&
+      gameStarted && !customOpen && !settingsOpen && !biscuitsActive && !swipeActive && !climbing &&
       bedDistance<1.05 && Math.abs(cat.position.y-CAT_BED_TOP)<.34;
 
     interactBtn.style.display=bedInteractionAvailable?'block':'none';
@@ -2208,6 +2436,7 @@ try{
     if(gameStarted&&!settingsOpen&&!customOpen){
       updateHuman(man,dt);
       updateHuman(woman,dt);
+      updateHuman(teen,dt);
     }
 
     // Cat-height camera. Customisation brings it closer for a live preview.
@@ -2229,7 +2458,8 @@ try{
     if(!gameStarted)status.textContent='Press to start';
     else if(biscuitsActive)status.textContent='Cat Bed • Making biscuits • Purring';
     else if(bedInteractionAvailable)status.textContent='Cat Bed • Make Biscuits';
-    else if(swipeActive)status.textContent='Test Room • Swipe!';
+    else if(climbing)status.textContent='House • Climbing';
+    else if(swipeActive)status.textContent='House • Swipe!';
     else if(customOpen)status.textContent='Customising kitten';
     else if(performance.now()<meowMouthUntil)status.textContent='Test Room • Meow!';
     else if(performance.now()<purrUntil)status.textContent='Test Room • Purring';
