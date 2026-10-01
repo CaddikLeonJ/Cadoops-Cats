@@ -77,7 +77,7 @@ button{appearance:none;-webkit-appearance:none}
 </div>
 
 <div id="hud">
-  <div id="brand">Cadoops' Cats<div id="ver">Prototype v0.5.0</div><div id="age">Kitten • 10 weeks</div></div>
+  <div id="brand">Cadoops' Cats<div id="ver">Prototype v0.5.1</div><div id="age">Kitten • 10 weeks</div></div>
   <div id="status">Loading 3D world…</div>
   <div id="stick"><div id="knob"></div></div>
   <button class="btn" id="jump">JUMP</button>
@@ -563,6 +563,11 @@ try{
       const tz=startZ+dz*(i/steps);
 
       if(!collidesWithSolid(tx,tz,cat.position.y)){
+        const loose=loosePropAt(tx,tz,cat.position.y);
+        if(loose){
+          shoveLooseProp(loose,x,z,.38+currentSpeed*.16);
+          break;
+        }
         x=tx;
         z=tz;
         continue;
@@ -705,13 +710,13 @@ try{
   solidBox(-3.6,.92,4.22,3.7,.72,.25,sofaMat,{name:'sofa back'});
   solidBox(-5.35,.58,3.65,.25,.95,1.35,sofaMat,{climbable:true,name:'sofa arm'});
   solidBox(-1.85,.58,3.65,.25,.95,1.35,sofaMat,{climbable:true,name:'sofa arm'});
-  box(-4.25,.70,3.45,1.0,.28,.85,creamFabric);
-  box(-2.95,.70,3.45,1.0,.28,.85,creamFabric);
+  solidBox(-4.25,.70,3.45,1.0,.28,.85,creamFabric,{climbable:true,name:'sofa cushion'});
+  solidBox(-2.95,.70,3.45,1.0,.28,.85,creamFabric,{climbable:true,name:'sofa cushion'});
 
   // Coffee table and TV unit.
   solidBox(-1.2,.27,2.65,2.5,.54,1.25,woodMat,{climbable:true,name:'coffee table'});
   solidBox(-1.2,.58,6.15,2.9,.52,.62,darkWoodMat,{climbable:true,name:'tv console'});
-  box(-1.2,1.20,6.23,2.35,1.12,.10,blackMat);
+  solidBox(-1.2,1.20,6.23,2.35,1.12,.10,blackMat,{name:'television'});
   box(-1.2,1.18,6.16,2.05,.84,.04,new THREE.MeshStandardMaterial({color:0x22343e,roughness:.25}));
 
   // Sideboard/bookshelf: staged shelves make it climbable.
@@ -722,13 +727,14 @@ try{
   // Plant.
   cylinder(-7.6,.28,5.9,.32,.55,potMat);
   cylinder(-7.6,.72,5.9,.18,.70,plantMat);
+  registerSolid(-7.6,5.9,.64,.64,1.07,0,false,'plant');
 
   // ---------------- Kitchen ----------------
   solidBox(-7.6,.43,-6.6,2.3,.86,.70,counterMat,{climbable:true,name:'kitchen counter'});
   solidBox(-5.0,.43,-6.6,2.3,.86,.70,counterMat,{climbable:true,name:'kitchen counter'});
   solidBox(-7.85,.43,-3.15,.70,.86,5.0,counterMat,{climbable:true,name:'kitchen counter'});
-  box(-6.35,.89,-6.6,5.0,.08,.82,blackMat);
-  box(-7.85,.89,-3.15,.82,.08,5.0,blackMat);
+  solidBox(-6.35,.89,-6.6,5.0,.08,.82,blackMat,{climbable:true,name:'kitchen worktop'});
+  solidBox(-7.85,.89,-3.15,.82,.08,5.0,blackMat,{climbable:true,name:'kitchen worktop'});
   box(-7.1,1.1,-6.58,.62,.35,.06,metalMat); // hob/splash detail
   box(-4.65,1.30,-8.30,1.1,1.6,.14,metalMat); // fridge front
 
@@ -745,15 +751,15 @@ try{
   // Chairs serve as stepping platforms.
   for(const p of [[-1.0,-2.35],[2.0,-2.35],[.5,-3.6]]){
     solidBox(p[0],.24,p[1],.72,.48,.72,fabricMat,{climbable:true,name:'dining chair'});
-    box(p[0],.73,p[1]+.28,.72,.95,.12,woodMat);
+    solidBox(p[0],.73,p[1]+.28,.72,.95,.12,woodMat,{name:'dining chair back'});
   }
 
   // ---------------- Bedroom ----------------
   // Human bed is one large, soft climbable surface.
   solidBox(6.15,.30,-5.0,4.1,.60,2.7,bedMat,{climbable:true,name:'human bed'});
-  box(6.15,.71,-6.18,4.1,.85,.22,darkWoodMat);
-  box(5.25,.66,-5.65,1.55,.28,.72,creamFabric);
-  box(7.05,.66,-5.65,1.55,.28,.72,creamFabric);
+  solidBox(6.15,.71,-6.18,4.1,.85,.22,darkWoodMat,{name:'bed headboard'});
+  solidBox(5.25,.66,-5.65,1.55,.28,.72,creamFabric,{climbable:true,name:'bed pillow'});
+  solidBox(7.05,.66,-5.65,1.55,.28,.72,creamFabric,{climbable:true,name:'bed pillow'});
   solidBox(4.15,.28,-7.05,.88,.56,.72,darkWoodMat,{climbable:true,name:'bedside table'});
   solidBox(8.05,.28,-7.05,.88,.56,.72,darkWoodMat,{climbable:true,name:'bedside table'});
 
@@ -785,6 +791,8 @@ try{
   }
   const foodBowl=makePetBowl(foodBowlPos,foodMat);
   const waterBowl=makePetBowl(waterBowlPos,waterMat);
+  registerSolid(foodBowlPos.x,foodBowlPos.z,.76,.76,.14,0,true,'food bowl');
+  registerSolid(waterBowlPos.x,waterBowlPos.z,.76,.76,.14,0,true,'water bowl');
 
   // Pantry/storage cupboard used by household refill/cleaning routines.
   const storageCupboard=solidBox(-3.10,.78,-7.42,.82,1.56,.56,woodMat,{name:'household storage'});
@@ -820,6 +828,8 @@ try{
   const porcelainMat=new THREE.MeshStandardMaterial({color:0xf1f1ed,roughness:.58});
   cylinder(5.70,.22,-.35,.34,.44,porcelainMat);
   box(5.70,.66,-.55,.56,.52,.20,porcelainMat);
+  registerSolid(5.70,-.35,.68,.68,.44,0,true,'toilet');
+  registerSolid(5.70,-.55,.56,.20,.92,.40,false,'toilet cistern');
   solidBox(7.65,.38,-.48,.78,.76,.46,porcelainMat,{climbable:true,name:'bathroom sink'});
   box(7.65,.83,-.66,.65,.08,.18,metalMat);
 
@@ -875,16 +885,20 @@ try{
   // Cat tree: staged, reachable platforms.
   const catTreeX=7.1,catTreeZ=4.8;
   cylinder(catTreeX,.34,catTreeZ,.16,.68,new THREE.MeshStandardMaterial({color:0xb69a72,roughness:1}));
+  registerSolid(catTreeX,catTreeZ,.32,.32,.68,0,false,'cat tree post');
   solidBox(catTreeX,.18,catTreeZ,.95,.22,.95,creamFabric,{climbable:true,name:'cat tree base'});
   solidBox(catTreeX-.34,.43,catTreeZ,.78,.18,.72,creamFabric,{climbable:true,name:'cat tree level 1'});
   cylinder(catTreeX-.02,.61,catTreeZ,.12,.46,new THREE.MeshStandardMaterial({color:0xb69a72,roughness:1}));
+  registerSolid(catTreeX-.02,catTreeZ,.24,.24,.84,.38,false,'cat tree post');
   solidBox(catTreeX+.18,.70,catTreeZ,.78,.18,.72,creamFabric,{climbable:true,name:'cat tree level 2'});
   cylinder(catTreeX+.16,.90,catTreeZ,.11,.45,new THREE.MeshStandardMaterial({color:0xb69a72,roughness:1}));
+  registerSolid(catTreeX+.16,catTreeZ,.22,.22,1.125,.675,false,'cat tree post');
   solidBox(catTreeX-.10,.99,catTreeZ,.72,.18,.68,creamFabric,{climbable:true,name:'cat tree top'});
 
   // Scratching post.
   const scratchPostPos=new THREE.Vector3(4.0,0,5.7);
   cylinder(scratchPostPos.x,.39,scratchPostPos.z,.16,.78,new THREE.MeshStandardMaterial({color:0xb49669,roughness:1}));
+  registerSolid(scratchPostPos.x,scratchPostPos.z,.32,.32,.78,0,false,'scratching post');
   solidBox(scratchPostPos.x,.06,scratchPostPos.z,.70,.12,.70,darkWoodMat,{climbable:true,name:'scratcher base'});
 
   // Window sill / lookout platform.
@@ -897,9 +911,18 @@ try{
   function addLooseProp(mesh,{room='room',fragile=false,durability=10,support=null,name='item'}={}){
     mesh.castShadow=mesh.receiveShadow=true;
     scene.add(mesh);
+    if(mesh.geometry){
+      if(!mesh.geometry.boundingBox)mesh.geometry.computeBoundingBox();
+      if(!mesh.geometry.boundingSphere)mesh.geometry.computeBoundingSphere();
+    }
+    const bbox=mesh.geometry&&mesh.geometry.boundingBox;
+    const bsphere=mesh.geometry&&mesh.geometry.boundingSphere;
+    const floorOffset=bbox?Math.max(.018,(bbox.max.y-bbox.min.y)*.5):.05;
+    const collisionRadius=bsphere?Math.max(.055,Math.min(.23,bsphere.radius)):.10;
     const prop={
       mesh,room,fragile,durability,maxDurability:durability,support,name,
-      restOffset:support?mesh.position.y-support.y:mesh.position.y-.04,
+      restOffset:support?mesh.position.y-support.y:floorOffset,
+      floorOffset,collisionRadius,
       vx:0,vy:0,vz:0,broken:false,lastHitAt:0
     };
     looseProps.push(prop);
@@ -948,13 +971,45 @@ try{
     if(prop.durability<=0)breakLooseProp(prop);
   }
 
-  function propOnSupport(prop){
-    const s=prop.support;
-    if(!s)return false;
-    return prop.mesh.position.x>s.x-s.w/2 &&
-           prop.mesh.position.x<s.x+s.w/2 &&
-           prop.mesh.position.z>s.z-s.d/2 &&
-           prop.mesh.position.z<s.z+s.d/2;
+  function propSupportTopAt(prop,maxTop=Infinity){
+    let best=0;
+    for(const s of solidBoxes){
+      if(s.broken)continue;
+      if(s.isWall)continue;
+      if(s.top>maxTop+.035)continue;
+      if(!insideSurface(prop.mesh.position.x,prop.mesh.position.z,s,-.018))continue;
+      if(s.top>best)best=s.top;
+    }
+    return best;
+  }
+
+  function loosePropAt(x,z,y,pad=CAT_COLLISION_RADIUS){
+    let best=null,bestDist=Infinity;
+    for(const prop of looseProps){
+      if(prop.broken)continue;
+      const vertical=Math.abs((prop.mesh.position.y-prop.floorOffset)-y);
+      if(vertical>.42)continue;
+      const dx=prop.mesh.position.x-x;
+      const dz=prop.mesh.position.z-z;
+      const d=Math.hypot(dx,dz);
+      const minDist=pad+prop.collisionRadius;
+      if(d<minDist&&d<bestDist){
+        best=prop;
+        bestDist=d;
+      }
+    }
+    return best;
+  }
+
+  function shoveLooseProp(prop,fromX,fromZ,force=.65){
+    if(!prop||prop.broken)return;
+    let dx=prop.mesh.position.x-fromX;
+    let dz=prop.mesh.position.z-fromZ;
+    const d=Math.hypot(dx,dz)||1;
+    dx/=d; dz/=d;
+    prop.vx+=dx*force;
+    prop.vz+=dz*force;
+    prop.vy+=Math.min(.18,force*.045);
   }
 
   function addPlate(x,y,z,room,support){
@@ -2169,15 +2224,18 @@ try{
     const dx=cat.position.x-h.position.x;
     const dz=cat.position.z-h.position.z;
     const len=Math.hypot(dx,dz)||1;
-    const side=(Math.random()-.5)*.9;
+    const side=(Math.random()-.5)*(h===man?1.15:h===teen?.45:.80);
+    const horizontal=h===man?7.1:h===teen?2.75:4.6;
+    const vertical=h===man?(5.5+Math.random()*.9):h===teen?(2.25+Math.random()*.38):(3.7+Math.random()*.7);
+    const spinBoost=h===man?1.28:h===teen?.72:1;
 
     ragdollActive=true;
     ragdollTime=0;
-    ragdollVX=(dx/len)*4.6+(-dz/len)*side;
-    ragdollVZ=(dz/len)*4.6+( dx/len)*side;
-    ragdollVY=3.7+Math.random()*.7;
-    ragdollSpinX=(Math.random()<.5?-1:1)*(4.8+Math.random()*2.4);
-    ragdollSpinZ=(Math.random()<.5?-1:1)*(3.0+Math.random()*2.0);
+    ragdollVX=(dx/len)*horizontal+(-dz/len)*side;
+    ragdollVZ=(dz/len)*horizontal+( dx/len)*side;
+    ragdollVY=vertical;
+    ragdollSpinX=(Math.random()<.5?-1:1)*(4.8+Math.random()*2.4)*spinBoost;
+    ragdollSpinZ=(Math.random()<.5?-1:1)*(3.0+Math.random()*2.0)*spinBoost;
     vy=0;
     onGround=false;
 
@@ -3613,24 +3671,34 @@ try{
         prop.vz*=-.36;
       }
 
-      const supported=prop.support&&propOnSupport(prop)&&prop.vy<=.02;
-      if(supported){
-        const restY=prop.support.y+prop.restOffset;
-        prop.mesh.position.y+=(restY-prop.mesh.position.y)*Math.min(1,18*dt);
-        prop.vy=0;
-      }else{
-        prop.vy-=5.8*dt;
-        prop.mesh.position.y+=prop.vy*dt;
-        if(prop.mesh.position.y<=.04){
-          const impact=Math.abs(prop.vy);
-          prop.mesh.position.y=.04;
-          if(prop.fragile&&impact>1.10){
-            breakLooseProp(prop);
-            continue;
-          }
-          if(impact>.42)prop.vy=impact*.18;
-          else prop.vy=0;
+      // Gravity is based on the actual intact world beneath the item.
+      // Destroy the furniture and support disappears immediately.
+      const oldY=prop.mesh.position.y;
+      prop.vy-=5.8*dt;
+      prop.mesh.position.y+=prop.vy*dt;
+
+      const supportTop=propSupportTopAt(prop,oldY+prop.floorOffset+.06);
+      const supportY=supportTop>0?supportTop+prop.floorOffset:prop.floorOffset;
+
+      if(prop.vy<=0&&oldY>=supportY-.025&&prop.mesh.position.y<=supportY){
+        const impact=Math.abs(prop.vy);
+        prop.mesh.position.y=supportY;
+
+        if(prop.fragile&&impact>1.10){
+          breakLooseProp(prop);
+          continue;
         }
+
+        if(impact>.42)prop.vy=impact*.18;
+        else prop.vy=0;
+      }else if(prop.mesh.position.y<prop.floorOffset){
+        const impact=Math.abs(prop.vy);
+        prop.mesh.position.y=prop.floorOffset;
+        if(prop.fragile&&impact>1.10){
+          breakLooseProp(prop);
+          continue;
+        }
+        prop.vy=impact>.42?impact*.18:0;
       }
 
       prop.vx*=Math.pow(.12,dt);
