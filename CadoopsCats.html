@@ -1232,6 +1232,7 @@ try{
     const source=type==='refillWater'?faucetUsePos:storageUsePos;
     const h=nearestAvailableHuman(source);
     if(!h)return false;
+    if(h.userData.lifeTask)finishHumanLifeTask(h);
 
     h.userData.task={
       type,
@@ -2596,6 +2597,7 @@ try{
       h.userData.lastSwipeAt=now;
 
       if(h.userData.swipeStreak>=4&&now>=h.userData.retaliationCooldown&&!h.userData.retaliation){
+        if(h.userData.lifeTask)finishHumanLifeTask(h);
         h.userData.retaliation={phase:'approach',timer:0,hitDone:false};
       }
     }
@@ -3451,7 +3453,7 @@ try{
 
     // --- Context actions + cat bed / biscuit making ---
     const bedDistance=Math.hypot(cat.position.x-catBedPos.x,cat.position.z-catBedPos.z);
-    const actionsAllowed=gameStarted&&!customOpen&&!settingsOpen&&!biscuitsActive&&!careAction&&!swipeActive&&!climbing;
+    const actionsAllowed=gameStarted&&!customOpen&&!settingsOpen&&!biscuitsActive&&!careAction&&!sharpening&&!ragdollActive&&!swipeActive&&!climbing;
 
     bedInteractionAvailable=
       actionsAllowed && bedDistance<1.05 && Math.abs(cat.position.y-CAT_BED_TOP)<.34;
