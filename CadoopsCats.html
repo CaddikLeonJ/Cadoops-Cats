@@ -899,6 +899,7 @@ try{
     scene.add(mesh);
     const prop={
       mesh,room,fragile,durability,maxDurability:durability,support,name,
+      restOffset:support?mesh.position.y-support.y:mesh.position.y-.04,
       vx:0,vy:0,vz:0,broken:false,lastHitAt:0
     };
     looseProps.push(prop);
@@ -2351,6 +2352,19 @@ try{
       toy.vz+=hitZ*(3.6*power)+p.sz*sideKick;
     }
 
+    for(const prop of looseProps){
+      if(prop.broken)continue;
+      const dx=prop.mesh.position.x-p.x;
+      const dz=prop.mesh.position.z-p.z;
+      const d=Math.hypot(dx,dz);
+      if(d>.86)continue;
+      const dot=(dx*hitX+dz*hitZ)/(d||1);
+      if(dot<-.16)continue;
+      damageLooseProp(prop,3.8*power,hitX,hitZ,.55+Math.random()*.35);
+    }
+
+    damageNearbySolids(p.x,p.z,.72,4.8*power);
+
     // Placeholder humans can be swatted too: they lose health and stagger back.
     for(const h of [man,woman,teen]){
       const dx=h.position.x-p.x;
@@ -2360,7 +2374,8 @@ try{
       const dot=(dx*hitX+dz*hitZ)/(d||1);
       if(dot<-.10)continue;
 
-      h.userData.health=Math.max(0,h.userData.health-(7+Math.floor(Math.random()*7)));
+      const humanDamage=(7+Math.floor(Math.random()*7))*(1+clawSharpness*1.55);
+      h.userData.health=Math.max(0,h.userData.health-humanDamage);
       h.userData.hurtUntil=performance.now()+620+Math.random()*220;
       h.userData.knockVX=hitX*(.95*power)+p.sx*.25;
       h.userData.knockVZ=hitZ*(.95*power)+p.sz*.25;
@@ -3294,6 +3309,97 @@ try{
       toy.mesh.rotation.x+=toy.vz*dt/toy.r;
       toy.mesh.position.x=Math.max(-8.4,Math.min(8.4,toy.mesh.position.x));
       toy.mesh.position.z=Math.max(-7.9,Math.min(7.9,toy.mesh.position.z));
+    }
+
+    // Physical room clutter: nudges, falls, wall collision and breakage.
+    for(const prop of looseProps){
+      if(prop.broken)continue;
+
+      const dx=prop.mesh.position.x-cat.position.x;
+      const dz=prop.mesh.position.z-cat.position.z;
+      const d=Math.hypot(dx,dz)||1;
+      if(d<.34&&currentSpeed>.12&&!ragdollActive){
+        const push=Math.min(2.2,.25+currentSpeed*.34);
+        prop.vx+=(dx/d)*push;
+        prop.vz+=(dz/d)*push;
+        prop.vy+=Math.min(.25,currentSpeed*.035);
+        if(currentSpeed>2.0)prop.durability-=currentSpeed*.06*(1+clawSharpness*.6);
+        if(prop.durability<=0)breakLooseProp(prop);
+      }
+      if(prop.broken)continue;
+
+      const oldPX=prop.mesh.position.x;
+      const oldPZ=prop.mesh.position.z;
+      prop.mesh.position.x+=prop.vx*dt;
+      prop.mesh.position.z+=prop.vz*dt;
+
+      if(wallAt(prop.mesh.position.x,prop.mesh.position.z,.08)){
+        prop.mesh.position.x=oldPX;
+        prop.mesh.position.z=oldPZ;
+        prop.vx*=-.36;
+        prop.vz*=-.36;
+      }
+
+      const supported=prop.support&&propOnSupport(prop)&&prop.vy<=.02;
+      if(supported){
+        const restY=prop.support.y+prop.restOffset;
+        prop.mesh.position.y+=(restY-prop.mesh.position.y)*Math.min(1,18*dt);
+        prop.vy=0;
+      }else{
+        prop.vy-=5.8*dt;
+        prop.mesh.position.y+=prop.vy*dt;
+        if(prop.mesh.position.y<=.04){
+          const impact=Math.abs(prop.vy);
+          prop.mesh.position.y=.04;
+          if(prop.fragile&&impact>1.10){
+            breakLooseProp(prop);
+            continue;
+          }
+          if(impact>.42)prop.vy=impact*.18;
+          else prop.vy=0;
+        }
+      }
+
+      prop.vx*=Math.pow(.12,dt);
+      prop.vz*=Math.pow(.12,dt);
+      prop.mesh.rotation.x+=prop.vz*dt*1.8;
+      prop.mesh.rotation.z-=prop.vx*dt*1.8;
+
+      prop.mesh.position.x=Math.max(-8.75,Math.min(8.75,prop.mesh.position.x));
+      prop.mesh.position.z=Math.max(-8.25,Math.min(8.25,prop.mesh.position.z));
+    }
+
+    for(const list of [fragmentPieces,debrisPieces]){
+      for(let i=list.length-1;i>=0;i--){
+        const p=list[i];
+        p.life-=dt;
+        const ox=p.mesh.position.x,oz=p.mesh.position.z;
+        p.vy-=6.4*dt;
+        p.mesh.position.x+=p.vx*dt;
+        p.mesh.position.y+=p.vy*dt;
+        p.mesh.position.z+=p.vz*dt;
+
+        if(wallAt(p.mesh.position.x,p.mesh.position.z,.035)){
+          p.mesh.position.x=ox;
+          p.mesh.position.z=oz;
+          p.vx*=-.32;
+          p.vz*=-.32;
+        }
+
+        if(p.mesh.position.y<.025){
+          p.mesh.position.y=.025;
+          p.vy=Math.abs(p.vy)*.16;
+          p.vx*=.55;
+          p.vz*=.55;
+        }
+        p.mesh.rotation.x+=dt*4.5;
+        p.mesh.rotation.y+=dt*3.6;
+
+        if(p.life<=0){
+          if(p.mesh.parent)p.mesh.parent.remove(p.mesh);
+          list.splice(i,1);
+        }
+      }
     }
 
     // Empty bowls and dirty litter automatically create household chores.
