@@ -568,6 +568,9 @@ try{
         continue;
       }
 
+      const impacted=solidAt(tx,tz,cat.position.y);
+      if(impacted&&currentSpeed>.35)damageSolid(impacted,.9+currentSpeed*1.35);
+
       // Slide along the face of furniture instead of sticking to it.
       const canX=!collidesWithSolid(tx,z,cat.position.y);
       const canZ=!collidesWithSolid(x,tz,cat.position.y);
@@ -2391,6 +2394,25 @@ try{
   poopBtn.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();startCareAction('poop')});
   peeBtn.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();startCareAction('pee')});
 
+  function startSharpening(){
+    if(!gameStarted||customOpen||settingsOpen||climbing||careAction||biscuitsActive||sharpening||ragdollActive)return;
+    if(Math.hypot(cat.position.x-scratchPostPos.x,cat.position.z-scratchPostPos.z)>.90)return;
+    stopGrooming();
+    swipeActive=false;
+    move.x=move.y=0;
+    currentSpeed=0;
+    runHeld=false;
+    sharpening=true;
+    sharpenTime=0;
+    cat.rotation.y=Math.atan2(scratchPostPos.x-cat.position.x,scratchPostPos.z-cat.position.z);
+  }
+
+  sharpenBtn.addEventListener('pointerdown',e=>{
+    e.preventDefault();
+    e.stopPropagation();
+    startSharpening();
+  });
+
   document.getElementById('jump').addEventListener('pointerdown',e=>{e.preventDefault();
     if(gameStarted && !customOpen && !settingsOpen && !climbing && onGround && lifeStage!=='Newborn'){
       if(biscuitsActive)stopBiscuits();
@@ -2447,7 +2469,7 @@ try{
     updateGrowth();
 
     const inputMag=Math.min(1,Math.hypot(move.x,move.y));
-    const moving=gameStarted && !customOpen && !settingsOpen && !biscuitsActive && !careAction && !climbing && inputMag>.06;
+    const moving=gameStarted && !customOpen && !settingsOpen && !biscuitsActive && !careAction && !sharpening && !ragdollActive && !climbing && inputMag>.06;
 
     let desiredSpeed=0;
     if(moving && lifeStage!=='Newborn'){
@@ -2541,6 +2563,8 @@ try{
 
     if(climbing){
       // updateClimb() owns the whole body/leg pose while attached to a surface.
+    }else if(sharpening||ragdollActive){
+      // Sharpening/ragdoll owns the body pose.
     }else if(careAction){
       // Care actions own the body/leg pose while eating, drinking or toileting.
     }else if(currentSpeed>.08 && onGround){
@@ -2675,6 +2699,42 @@ try{
       }
     }
 
+    // --- Scratch post / claw sharpening ---
+    if(sharpening){
+      sharpenTime+=dt;
+      const beat=Math.sin(sharpenTime*13);
+      const left=Math.max(0,beat);
+      const right=Math.max(0,-beat);
+
+      cat.rotation.y+=angleDelta(
+        cat.rotation.y,
+        Math.atan2(scratchPostPos.x-cat.position.x,scratchPostPos.z-cat.position.z)
+      )*Math.min(1,12*dt);
+
+      catRig.rotation.x+=(-.42-catRig.rotation.x)*Math.min(1,10*dt);
+      shoulders.position.y+=(.55-shoulders.position.y)*Math.min(1,10*dt);
+      haunches.position.y+=(.49-haunches.position.y)*Math.min(1,10*dt);
+      head.position.y+=(.77-head.position.y)*Math.min(1,10*dt);
+      head.rotation.x+=(-.06-head.rotation.x)*Math.min(1,10*dt);
+
+      const lf=legs[0],rf=legs[1];
+      for(const [leg,lift] of [[lf,left],[rf,right]]){
+        leg.position.y+=(.55+lift*.11-leg.position.y)*Math.min(1,20*dt);
+        leg.position.z+=(.49+lift*.06-leg.position.z)*Math.min(1,20*dt);
+        leg.rotation.x+=(-.78+lift*.26-leg.rotation.x)*Math.min(1,22*dt);
+        leg.userData.lower.rotation.x+=(-.66-lift*.20-leg.userData.lower.rotation.x)*Math.min(1,22*dt);
+        leg.userData.paw.rotation.x+=(.48+lift*.30-leg.userData.paw.rotation.x)*Math.min(1,24*dt);
+      }
+
+      if(sharpenTime>=3.0){
+        sharpening=false;
+        sharpenTime=0;
+        clawSharpness=1;
+        catRig.rotation.x=0;
+        markActive();
+      }
+    }
+
     // --- Eat / drink / litter animations ---
     if(careAction){
       careActionTime+=dt;
@@ -2777,7 +2837,7 @@ try{
     // --- Idle grooming ---
     // After five seconds with no movement/input, pick a different cat grooming
     // behaviour at random. Any player activity immediately interrupts it.
-    const genuinelyIdle=!customOpen && !settingsOpen && !biscuitsActive && !careAction && !swipeActive && !climbing && onGround && currentSpeed<.035 && !moving;
+    const genuinelyIdle=!customOpen && !settingsOpen && !biscuitsActive && !careAction && !sharpening && !ragdollActive && !swipeActive && !climbing && onGround && currentSpeed<.035 && !moving;
     if(genuinelyIdle){
       idleSeconds+=dt;
     }else{
@@ -2942,12 +3002,15 @@ try{
     const litterNear=actionsAllowed && nearPoint(litterPos,1.02);
     const poopAvailable=litterNear && catNeeds.gutLoad>=.07;
     const peeAvailable=litterNear && catNeeds.bladderLoad>=.055;
+    const sharpenAvailable=actionsAllowed&&!sharpening &&
+      Math.hypot(cat.position.x-scratchPostPos.x,cat.position.z-scratchPostPos.z)<.90;
 
     interactBtn.style.display=bedInteractionAvailable?'block':'none';
     eatBtn.style.display=foodAvailable?'block':'none';
     drinkBtn.style.display=drinkAvailable?'block':'none';
     poopBtn.style.display=poopAvailable?'block':'none';
     peeBtn.style.display=peeAvailable?'block':'none';
+    sharpenBtn.style.display=sharpenAvailable?'block':'none';
 
     updateBowlVisuals();
 
@@ -2996,7 +3059,7 @@ try{
     idlePhase+=dt;
     const youthIdle=1-ageAdultness;
 
-    if(!climbing&&!careAction&&grooming!=='tailBase'){
+    if(!climbing&&!careAction&&!sharpening&&!ragdollActive&&grooming!=='tailBase'){
       const tailBaseTarget=1.02 + (moving?.12:.20);
       tailRoot.rotation.x+=(tailBaseTarget-tailRoot.rotation.x)*Math.min(1,6*dt);
       tailRoot.rotation.y=Math.sin(t*(1.25+youthIdle*.45))*(moving?.14:.24);
@@ -3020,7 +3083,7 @@ try{
     }else{
       chest.scale.y+=(1.10-chest.scale.y)*Math.min(1,10*dt);
     }
-    if(!grooming&&!careAction&&!swipeActive&&!climbing){
+    if(!grooming&&!careAction&&!sharpening&&!ragdollActive&&!swipeActive&&!climbing){
       head.rotation.y=Math.sin(t*.72)*.055*idleCuriosity;
       if(currentSpeed<=.08)head.rotation.x=Math.sin(t*.91)*.025*idleCuriosity;
       head.rotation.z=Math.sin(movePhase)*.010*gait + Math.sin(t*.63)*.012*idleCuriosity;
@@ -3100,6 +3163,7 @@ try{
     else if(careAction==='drink')status.textContent='Kitchen • Drinking';
     else if(careAction==='poop')status.textContent='Bathroom • Using litter tray';
     else if(careAction==='pee')status.textContent='Bathroom • Using litter tray';
+    else if(sharpening)status.textContent='Cat Zone • Sharpening claws';
     else if(bedInteractionAvailable)status.textContent='Cat Bed • Make Biscuits';
     else if(climbing)status.textContent='House • Climbing';
     else if(swipeActive)status.textContent='House • Swipe!';
