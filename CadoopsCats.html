@@ -890,6 +890,187 @@ try{
   // Window sill / lookout platform.
   solidBox(7.95,.48,2.62,.65,.18,2.45,trimMat,{climbable:true,name:'window sill'});
 
+  // ---------------- Physical room clutter ----------------
+  const looseProps=[];
+  const fragmentPieces=[];
+
+  function addLooseProp(mesh,{room='room',fragile=false,durability=10,support=null,name='item'}={}){
+    mesh.castShadow=mesh.receiveShadow=true;
+    scene.add(mesh);
+    const prop={
+      mesh,room,fragile,durability,maxDurability:durability,support,name,
+      vx:0,vy:0,vz:0,broken:false,lastHitAt:0
+    };
+    looseProps.push(prop);
+    return prop;
+  }
+
+  function breakLooseProp(prop){
+    if(!prop||prop.broken)return;
+    prop.broken=true;
+    const pos=prop.mesh.position.clone();
+    const mat=(prop.mesh.material&&prop.mesh.material.clone)?prop.mesh.material.clone():creamFabric.clone();
+    if(prop.mesh.parent)prop.mesh.parent.remove(prop.mesh);
+
+    const pieces=prop.fragile?5:3;
+    for(let i=0;i<pieces;i++){
+      const f=new THREE.Mesh(
+        new THREE.BoxGeometry(.035+Math.random()*.07,.02+Math.random()*.05,.035+Math.random()*.07),
+        mat
+      );
+      f.position.copy(pos);
+      f.position.x+=(Math.random()-.5)*.12;
+      f.position.z+=(Math.random()-.5)*.12;
+      f.rotation.set(Math.random()*3,Math.random()*3,Math.random()*3);
+      f.castShadow=true;
+      scene.add(f);
+      fragmentPieces.push({
+        mesh:f,
+        vx:prop.vx+(Math.random()-.5)*1.5,
+        vy:.5+Math.random()*1.1,
+        vz:prop.vz+(Math.random()-.5)*1.5,
+        life:2.4+Math.random()
+      });
+    }
+  }
+
+  function damageLooseProp(prop,damage,dirX=0,dirZ=0,lift=.2){
+    if(!prop||prop.broken)return;
+    const now=performance.now();
+    if(now-prop.lastHitAt<90)return;
+    prop.lastHitAt=now;
+    const mult=1+clawSharpness*2.2;
+    prop.durability-=damage*mult;
+    prop.vx+=dirX*(.65+damage*.12);
+    prop.vz+=dirZ*(.65+damage*.12);
+    prop.vy+=lift;
+    if(prop.durability<=0)breakLooseProp(prop);
+  }
+
+  function propOnSupport(prop){
+    const s=prop.support;
+    if(!s)return false;
+    return prop.mesh.position.x>s.x-s.w/2 &&
+           prop.mesh.position.x<s.x+s.w/2 &&
+           prop.mesh.position.z>s.z-s.d/2 &&
+           prop.mesh.position.z<s.z+s.d/2;
+  }
+
+  function addPlate(x,y,z,room,support){
+    const m=new THREE.Mesh(
+      new THREE.CylinderGeometry(.18,.18,.025,20),
+      new THREE.MeshStandardMaterial({color:0xf3eee2,roughness:.55})
+    );
+    m.position.set(x,y,z);
+    return addLooseProp(m,{room,fragile:true,durability:7,support,name:'plate'});
+  }
+
+  function addMug(x,y,z,room,support){
+    const m=new THREE.Mesh(
+      new THREE.CylinderGeometry(.075,.07,.17,14),
+      new THREE.MeshStandardMaterial({color:0xd4e1df,roughness:.65})
+    );
+    m.position.set(x,y,z);
+    return addLooseProp(m,{room,fragile:true,durability:8,support,name:'mug'});
+  }
+
+  function addBook(x,y,z,support){
+    const m=new THREE.Mesh(
+      new THREE.BoxGeometry(.30,.045,.21),
+      new THREE.MeshStandardMaterial({color:0x815444,roughness:.92})
+    );
+    m.position.set(x,y,z);
+    return addLooseProp(m,{room:'bedroom',fragile:false,durability:16,support,name:'book'});
+  }
+
+  const kitchenBackSupport={x:-6.35,z:-6.60,w:4.9,d:.82,y:.96};
+  const diningSupport={x:.5,z:-2.35,w:2.55,d:1.65,y:.53};
+  const coffeeSupport={x:-1.2,z:2.65,w:2.5,d:1.25,y:.56};
+  const bedsideLSupport={x:4.15,z:-7.05,w:.88,d:.72,y:.58};
+  const bedsideRSupport={x:8.05,z:-7.05,w:.88,d:.72,y:.58};
+  const bathroomSinkSupport={x:7.65,z:-.48,w:.78,d:.46,y:.78};
+
+  // Kitchen: plates, bowl, pan, cutlery and a cup.
+  addPlate(-6.85,.99,-6.55,'kitchen',kitchenBackSupport);
+  addPlate(-6.45,.99,-6.55,'kitchen',kitchenBackSupport);
+
+  const kitchenBowlMesh=new THREE.Mesh(
+    new THREE.CylinderGeometry(.13,.10,.09,18),
+    new THREE.MeshStandardMaterial({color:0xb2c8d0,roughness:.6})
+  );
+  kitchenBowlMesh.position.set(-6.05,1.00,-6.55);
+  addLooseProp(kitchenBowlMesh,{room:'kitchen',fragile:true,durability:8,support:kitchenBackSupport,name:'bowl'});
+
+  const panMesh=new THREE.Mesh(new THREE.CylinderGeometry(.15,.15,.045,18),metalMat.clone());
+  panMesh.position.set(-5.65,1.00,-6.55);
+  addLooseProp(panMesh,{room:'kitchen',fragile:false,durability:24,support:kitchenBackSupport,name:'pan'});
+
+  for(let i=0;i<3;i++){
+    const cutlery=new THREE.Mesh(new THREE.BoxGeometry(.025,.018,.26),metalMat.clone());
+    cutlery.position.set(-5.35+i*.08,.99,-6.48);
+    addLooseProp(cutlery,{room:'kitchen',fragile:false,durability:12,support:kitchenBackSupport,name:'cutlery'});
+  }
+
+  // Dining table: crockery and a mug.
+  addPlate(.20,.56,-2.28,'dining',diningSupport);
+  addPlate(.80,.56,-2.28,'dining',diningSupport);
+  addMug(.05,.64,-2.22,'dining',diningSupport);
+
+  // Living room: mug, remote, vase and framed photo.
+  addMug(-1.65,.66,2.52,'living',coffeeSupport);
+
+  const remote=new THREE.Mesh(new THREE.BoxGeometry(.09,.035,.25),blackMat.clone());
+  remote.position.set(-1.05,.61,2.52);
+  addLooseProp(remote,{room:'living',fragile:false,durability:14,support:coffeeSupport,name:'remote'});
+
+  const vase=new THREE.Mesh(
+    new THREE.CylinderGeometry(.08,.11,.27,14),
+    new THREE.MeshStandardMaterial({color:0x8db0a8,roughness:.35})
+  );
+  vase.position.set(-.55,.72,2.52);
+  addLooseProp(vase,{room:'living',fragile:true,durability:6,support:coffeeSupport,name:'vase'});
+
+  const frame=new THREE.Mesh(new THREE.BoxGeometry(.24,.20,.035),woodMat.clone());
+  frame.position.set(-.30,.69,2.68);
+  addLooseProp(frame,{room:'living',fragile:true,durability:7,support:coffeeSupport,name:'photo frame'});
+
+  // Bedroom: bedside lamp, books and alarm clock.
+  addBook(4.05,.63,-7.05,bedsideLSupport);
+  addBook(8.00,.63,-7.05,bedsideRSupport);
+
+  const lamp=new THREE.Mesh(
+    new THREE.CylinderGeometry(.075,.11,.28,14),
+    new THREE.MeshStandardMaterial({color:0xe0c48e,roughness:.8})
+  );
+  lamp.position.set(4.35,.76,-7.05);
+  addLooseProp(lamp,{room:'bedroom',fragile:true,durability:8,support:bedsideLSupport,name:'lamp'});
+
+  const alarm=new THREE.Mesh(new THREE.BoxGeometry(.20,.13,.10),blackMat.clone());
+  alarm.position.set(8.12,.67,-7.05);
+  addLooseProp(alarm,{room:'bedroom',fragile:true,durability:9,support:bedsideRSupport,name:'alarm clock'});
+
+  // Bathroom: soap, shampoo and a toothbrush cup.
+  const soap=new THREE.Mesh(
+    new THREE.BoxGeometry(.13,.045,.09),
+    new THREE.MeshStandardMaterial({color:0xd8c6b2,roughness:.8})
+  );
+  soap.position.set(7.45,.83,-.44);
+  addLooseProp(soap,{room:'bathroom',fragile:false,durability:10,support:bathroomSinkSupport,name:'soap'});
+
+  const shampoo=new THREE.Mesh(
+    new THREE.CylinderGeometry(.045,.055,.21,12),
+    new THREE.MeshStandardMaterial({color:0x8fb8d8,roughness:.6})
+  );
+  shampoo.position.set(7.72,.90,-.48);
+  addLooseProp(shampoo,{room:'bathroom',fragile:true,durability:7,support:bathroomSinkSupport,name:'shampoo bottle'});
+
+  const brushCup=new THREE.Mesh(
+    new THREE.CylinderGeometry(.065,.065,.14,12),
+    new THREE.MeshStandardMaterial({color:0xe8e1d3,roughness:.7})
+  );
+  brushCup.position.set(7.90,.86,-.48);
+  addLooseProp(brushCup,{room:'bathroom',fragile:true,durability:7,support:bathroomSinkSupport,name:'toothbrush cup'});
+
   // ---------------- Toys ----------------
   const toyBalls=[];
   function addToyBall(x,z,color){
