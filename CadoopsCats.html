@@ -77,7 +77,7 @@ button{appearance:none;-webkit-appearance:none}
 </div>
 
 <div id="hud">
-  <div id="brand">Cadoops' Cats<div id="ver">Prototype v0.4.1</div><div id="age">Kitten • 10 weeks</div></div>
+  <div id="brand">Cadoops' Cats<div id="ver">Prototype v0.5.0</div><div id="age">Kitten • 10 weeks</div></div>
   <div id="status">Loading 3D world…</div>
   <div id="stick"><div id="knob"></div></div>
   <button class="btn" id="jump">JUMP</button>
@@ -91,6 +91,7 @@ button{appearance:none;-webkit-appearance:none}
     <button class="contextAction" id="drinkBtn">DRINK</button>
     <button class="contextAction" id="poopBtn">POOP</button>
     <button class="contextAction" id="peeBtn">PEE</button>
+    <button class="contextAction" id="sharpenBtn">SHARPEN CLAWS</button>
   </div>
   <button id="customiseBtn">CUSTOMISE</button>
   <button id="musicBtn">MUSIC: ON</button>
@@ -465,7 +466,15 @@ try{
   const CAT_COLLISION_RADIUS=.17;
 
   function registerSolid(x,z,w,d,top,base=0,climbable=false,name='object'){
-    const item={x,z,w,d,top,base,name};
+    const isWall=name.toLowerCase().includes('wall');
+    const item={
+      x,z,w,d,top,base,name,isWall,
+      broken:false,
+      hp:isWall?420:95,
+      maxHp:isWall?420:95,
+      lastDamageAt:0,
+      mesh:null
+    };
     solidBoxes.push(item);
     if(climbable)climbSurfaces.push(item);
     return item;
@@ -473,7 +482,9 @@ try{
 
   function solidBox(x,y,z,w,h,d,mat=wallMat,{climbable=false,name='object'}={}){
     const m=box(x,y,z,w,h,d,mat);
-    registerSolid(x,z,w,d,y+h/2,y-h/2,climbable,name);
+    const item=registerSolid(x,z,w,d,y+h/2,y-h/2,climbable,name);
+    item.mesh=m;
+    m.userData.solid=item;
     return m;
   }
 
@@ -484,6 +495,7 @@ try{
 
   function collidesWithSolid(x,z,y){
     for(const s of solidBoxes){
+      if(s.broken)continue;
       if(!insideSurface(x,z,s,CAT_COLLISION_RADIUS))continue;
       // Once the cat's feet are at the object's top it is allowed to occupy it.
       if(y>=s.top-.065)continue;
@@ -498,6 +510,7 @@ try{
     for(let pass=0;pass<10;pass++){
       let moved=false;
       for(const s of solidBoxes){
+        if(s.broken)continue;
         if(cat.position.y>=s.top-.065)continue;
 
         const minX=s.x-s.w/2-CAT_COLLISION_RADIUS;
@@ -571,11 +584,92 @@ try{
   function landingSurfaceHeight(x,z,previousY,newY){
     let best=0;
     for(const s of climbSurfaces){
+      if(s.broken)continue;
       if(!insideSurface(x,z,s,-.035))continue;
       const top=s.top;
       if(previousY>=top-.03 && newY<=top+.035 && top>best)best=top;
     }
     return best;
+  }
+
+  const debrisPieces=[];
+
+  function solidAt(x,z,y,pad=CAT_COLLISION_RADIUS){
+    for(const s of solidBoxes){
+      if(s.broken)continue;
+      if(!insideSurface(x,z,s,pad))continue;
+      if(y<s.top-.065)return s;
+    }
+    return null;
+  }
+
+  function wallAt(x,z,pad=.18){
+    for(const s of solidBoxes){
+      if(s.broken||!s.isWall)continue;
+      if(insideSurface(x,z,s,pad))return s;
+    }
+    return null;
+  }
+
+  function spawnCrumble(s){
+    if(!s.mesh)return;
+    const mat=s.mesh.material&&s.mesh.material.clone?s.mesh.material.clone():woodMat.clone();
+    const count=s.isWall?3:7;
+    for(let i=0;i<count;i++){
+      const chunk=new THREE.Mesh(
+        new THREE.BoxGeometry(.12+Math.random()*.18,.08+Math.random()*.15,.12+Math.random()*.18),
+        mat
+      );
+      chunk.position.set(
+        s.x+(Math.random()-.5)*Math.min(s.w,.8),
+        Math.max(.08,s.top-.10)+Math.random()*.30,
+        s.z+(Math.random()-.5)*Math.min(s.d,.8)
+      );
+      chunk.rotation.set(Math.random()*2,Math.random()*2,Math.random()*2);
+      chunk.castShadow=true;
+      scene.add(chunk);
+      debrisPieces.push({mesh:chunk,vx:(Math.random()-.5)*1.8,vy:.8+Math.random()*1.5,vz:(Math.random()-.5)*1.8,life:2.2+Math.random()*1.2});
+    }
+  }
+
+  function damageSolid(s,baseDamage){
+    if(!s||s.broken)return;
+    const now=performance.now();
+    if(now-s.lastDamageAt<170)return;
+    s.lastDamageAt=now;
+
+    const clawMultiplier=1+clawSharpness*2.2;
+    const damage=Math.max(.3,baseDamage)*clawMultiplier;
+    s.hp=Math.max(0,s.hp-damage);
+
+    if(s.mesh){
+      if(!s.mesh.userData.damageMatCloned&&s.mesh.material&&s.mesh.material.clone){
+        s.mesh.material=s.mesh.material.clone();
+        s.mesh.userData.damageMatCloned=true;
+      }
+      if(s.mesh.material&&s.mesh.material.color)s.mesh.material.color.multiplyScalar(Math.max(.55,.985-damage*.002));
+      s.mesh.rotation.z+=(Math.random()-.5)*(1-s.hp/s.maxHp)*.025;
+    }
+
+    if(s.isWall){
+      if(s.hp<=0)s.hp=s.maxHp*.12;
+      return;
+    }
+
+    if(s.hp<=0){
+      s.broken=true;
+      spawnCrumble(s);
+      if(s.mesh&&s.mesh.parent)s.mesh.parent.remove(s.mesh);
+    }
+  }
+
+  function damageNearbySolids(x,z,radius,baseDamage){
+    for(const s of solidBoxes){
+      if(s.broken)continue;
+      const nearX=Math.max(s.x-s.w/2,Math.min(s.x+s.w/2,x));
+      const nearZ=Math.max(s.z-s.d/2,Math.min(s.z+s.d/2,z));
+      if(Math.hypot(nearX-x,nearZ-z)<=radius)damageSolid(s,baseDamage);
+    }
   }
 
   // Outer walls.
@@ -786,8 +880,9 @@ try{
   solidBox(catTreeX-.10,.99,catTreeZ,.72,.18,.68,creamFabric,{climbable:true,name:'cat tree top'});
 
   // Scratching post.
-  cylinder(4.0,.39,5.7,.16,.78,new THREE.MeshStandardMaterial({color:0xb49669,roughness:1}));
-  solidBox(4.0,.06,5.7,.70,.12,.70,darkWoodMat,{climbable:true,name:'scratcher base'});
+  const scratchPostPos=new THREE.Vector3(4.0,0,5.7);
+  cylinder(scratchPostPos.x,.39,scratchPostPos.z,.16,.78,new THREE.MeshStandardMaterial({color:0xb49669,roughness:1}));
+  solidBox(scratchPostPos.x,.06,scratchPostPos.z,.70,.12,.70,darkWoodMat,{climbable:true,name:'scratcher base'});
 
   // Window sill / lookout platform.
   solidBox(7.95,.48,2.62,.65,.18,2.45,trimMat,{climbable:true,name:'window sill'});
@@ -1619,6 +1714,13 @@ try{
   let lastSwipePaw=1;
   let swipeAngleVariation=0;
   let swipeStrength=1;
+  let clawSharpness=.20;
+  let sharpening=false;
+  let sharpenTime=0;
+  let ragdollActive=false;
+  let ragdollTime=0;
+  let ragdollVX=0,ragdollVY=0,ragdollVZ=0;
+  let ragdollSpinX=0,ragdollSpinZ=0;
   let climbing=false;
   let climbSurface=null;
   let climbTime=0;
@@ -1647,6 +1749,7 @@ try{
   const drinkBtn=document.getElementById('drinkBtn');
   const poopBtn=document.getElementById('poopBtn');
   const peeBtn=document.getElementById('peeBtn');
+  const sharpenBtn=document.getElementById('sharpenBtn');
   const swipeBtn=document.getElementById('swipe');
 
   settingsBtn.addEventListener('pointerdown',()=>{
