@@ -1142,6 +1142,13 @@ try{
     human.userData.hurtLean=0;
     human.userData.task=null;
     human.userData.taskTimer=0;
+    human.userData.lifeTask=null;
+    human.userData.nextLifeTask=performance.now()+3500+Math.random()*5500;
+    human.userData.swipeStreak=0;
+    human.userData.lastSwipeAt=0;
+    human.userData.retaliation=null;
+    human.userData.retaliationCooldown=0;
+    human.userData.detourSign=Math.random()<.5?-1:1;
     return human;
   }
 
@@ -1247,13 +1254,198 @@ try{
     litterCleanRequested=false;
   }
 
+  function humanBlocked(x,z){
+    return !!wallAt(x,z,.24);
+  }
+
+  function moveHumanToward(h,target,speed,dt){
+    const dx=target.x-h.position.x;
+    const dz=target.z-h.position.z;
+    const dist=Math.hypot(dx,dz);
+    if(dist<.001)return dist;
+
+    const dirX=dx/dist,dirZ=dz/dist;
+    const step=speed*dt;
+    const oldX=h.position.x,oldZ=h.position.z;
+    const nx=oldX+dirX*step,nz=oldZ+dirZ*step;
+
+    if(!humanBlocked(nx,nz)){
+      h.position.x=nx;
+      h.position.z=nz;
+    }else if(!humanBlocked(nx,oldZ)){
+      h.position.x=nx;
+    }else if(!humanBlocked(oldX,nz)){
+      h.position.z=nz;
+    }else{
+      // Follow the wall until a doorway/opening is reached.
+      let sx=-dirZ*h.userData.detourSign;
+      let sz=dirX*h.userData.detourSign;
+      if(!humanBlocked(oldX+sx*step,oldZ+sz*step)){
+        h.position.x=oldX+sx*step;
+        h.position.z=oldZ+sz*step;
+      }else{
+        h.userData.detourSign*=-1;
+        sx=-dirZ*h.userData.detourSign;
+        sz=dirX*h.userData.detourSign;
+        if(!humanBlocked(oldX+sx*step,oldZ+sz*step)){
+          h.position.x=oldX+sx*step;
+          h.position.z=oldZ+sz*step;
+        }
+      }
+    }
+
+    const desired=Math.atan2(h.position.x-oldX,h.position.z-oldZ);
+    if(Math.hypot(h.position.x-oldX,h.position.z-oldZ)>.0001){
+      h.rotation.y+=Math.atan2(Math.sin(desired-h.rotation.y),Math.cos(desired-h.rotation.y))*Math.min(1,6*dt);
+      h.userData.walkPhase+=dt*6.0;
+      const swing=Math.sin(h.userData.walkPhase)*.46;
+      h.userData.legs[0].rotation.x=swing;
+      h.userData.legs[1].rotation.x=-swing;
+      h.userData.arms[0].rotation.x=-swing*.50;
+      h.userData.arms[1].rotation.x=swing*.40;
+    }
+    return dist;
+  }
+
+  const humanLifeTargets={
+    eat:{x:.55,z:-3.15},
+    drink:{x:-3.35,z:-4.35},
+    wash:{x:faucetUsePos.x,z:faucetUsePos.z},
+    sleep:{x:5.65,z:-4.15},
+    couch:{x:-3.55,z:3.20}
+  };
+
+  function startHumanLifeTask(h){
+    const choices=['eat','drink','wash','sleep','couch','playCat'];
+    const type=choices[Math.floor(Math.random()*choices.length)];
+    h.userData.lifeTask={
+      type,
+      phase:'approach',
+      timer:0,
+      total:0,
+      duration:type==='sleep'?6+Math.random()*4:3.2+Math.random()*3.2
+    };
+  }
+
+  function finishHumanLifeTask(h){
+    h.position.y=0;
+    h.rotation.z=0;
+    h.userData.legs[0].rotation.x=0;
+    h.userData.legs[1].rotation.x=0;
+    h.userData.arms[0].rotation.x=0;
+    h.userData.arms[1].rotation.x=0;
+    h.userData.lifeTask=null;
+    h.userData.nextLifeTask=performance.now()+4500+Math.random()*9000;
+  }
+
+  function updateHumanLifeTask(h,dt){
+    const task=h.userData.lifeTask;
+    if(!task)return false;
+
+    task.total+=dt;
+    const target=task.type==='playCat'
+      ? {x:cat.position.x,z:cat.position.z}
+      : humanLifeTargets[task.type];
+
+    const threshold=task.type==='playCat'?1.05:.42;
+    const dist=Math.hypot(target.x-h.position.x,target.z-h.position.z);
+
+    if(task.phase==='approach'){
+      if(dist>threshold){
+        moveHumanToward(h,target,.56,dt);
+        if(task.total>10)finishHumanLifeTask(h);
+        return true;
+      }
+      task.phase='act';
+      task.timer=0;
+    }
+
+    task.timer+=dt;
+    const wave=Math.sin(task.timer*5.8);
+
+    if(task.type==='eat'){
+      h.userData.arms[0].rotation.x=-1.15+wave*.18;
+      h.userData.arms[1].rotation.x=-.65-wave*.12;
+    }else if(task.type==='drink'){
+      h.userData.arms[1].rotation.x=-1.38+Math.sin(task.timer*2.5)*.08;
+      h.rotation.z=.05;
+    }else if(task.type==='wash'){
+      h.userData.arms[0].rotation.x=-.92+wave*.26;
+      h.userData.arms[1].rotation.x=-.92-wave*.26;
+    }else if(task.type==='sleep'){
+      h.position.y+=(.52-h.position.y)*Math.min(1,4*dt);
+      h.rotation.z+=(1.48-h.rotation.z)*Math.min(1,4*dt);
+      h.userData.legs[0].rotation.x*=Math.max(0,1-5*dt);
+      h.userData.legs[1].rotation.x*=Math.max(0,1-5*dt);
+    }else if(task.type==='couch'){
+      h.position.y+=(.43-h.position.y)*Math.min(1,6*dt);
+      h.userData.legs[0].rotation.x+=(-1.18-h.userData.legs[0].rotation.x)*Math.min(1,8*dt);
+      h.userData.legs[1].rotation.x+=(-1.18-h.userData.legs[1].rotation.x)*Math.min(1,8*dt);
+      h.userData.arms[0].rotation.x+=(-.18-h.userData.arms[0].rotation.x)*Math.min(1,6*dt);
+      h.userData.arms[1].rotation.x+=(-.18-h.userData.arms[1].rotation.x)*Math.min(1,6*dt);
+    }else if(task.type==='playCat'){
+      const face=Math.atan2(cat.position.x-h.position.x,cat.position.z-h.position.z);
+      h.rotation.y+=Math.atan2(Math.sin(face-h.rotation.y),Math.cos(face-h.rotation.y))*Math.min(1,8*dt);
+      h.position.y+=(.12-h.position.y)*Math.min(1,8*dt);
+      h.userData.arms[0].rotation.x+=(-1.05+wave*.15-h.userData.arms[0].rotation.x)*Math.min(1,10*dt);
+      h.userData.arms[1].rotation.x+=(-1.05-wave*.15-h.userData.arms[1].rotation.x)*Math.min(1,10*dt);
+    }
+
+    if(task.timer>=task.duration)finishHumanLifeTask(h);
+    return true;
+  }
+
   function updateHuman(h,dt){
     const now=performance.now();
 
-    // Swipe hit reaction: stagger backwards, lean away and throw the arms up.
+    // Repeated swipes can trigger retaliation once the current flinch finishes.
+    if(h.userData.retaliation){
+      const r=h.userData.retaliation;
+      const dx=cat.position.x-h.position.x;
+      const dz=cat.position.z-h.position.z;
+      const dist=Math.hypot(dx,dz);
+
+      if(r.phase==='approach'){
+        if(dist>.78){
+          moveHumanToward(h,{x:cat.position.x,z:cat.position.z},.92,dt);
+        }else{
+          r.phase='kick';
+          r.timer=0;
+          r.hitDone=false;
+        }
+      }else{
+        r.timer+=dt;
+        const face=Math.atan2(dx,dz);
+        h.rotation.y+=Math.atan2(Math.sin(face-h.rotation.y),Math.cos(face-h.rotation.y))*Math.min(1,10*dt);
+        h.userData.legs[0].rotation.x+=(-.20-h.userData.legs[0].rotation.x)*Math.min(1,12*dt);
+        h.userData.legs[1].rotation.x+=(-1.18+Math.sin(r.timer*7)*.10-h.userData.legs[1].rotation.x)*Math.min(1,15*dt);
+        h.userData.arms[0].rotation.x+=(-.35-h.userData.arms[0].rotation.x)*Math.min(1,10*dt);
+        h.userData.arms[1].rotation.x+=(.35-h.userData.arms[1].rotation.x)*Math.min(1,10*dt);
+
+        if(r.timer>.28&&!r.hitDone){
+          r.hitDone=true;
+          triggerCatRagdoll(h);
+        }
+        if(r.timer>.82){
+          h.userData.retaliation=null;
+          h.userData.swipeStreak=0;
+          h.userData.retaliationCooldown=now+6500;
+        }
+      }
+      return;
+    }
+
+    // Swipe hit reaction: stagger backwards without ever crossing a wall.
     if(now<h.userData.hurtUntil){
+      const ox=h.position.x,oz=h.position.z;
       h.position.x+=h.userData.knockVX*dt;
       h.position.z+=h.userData.knockVZ*dt;
+      if(humanBlocked(h.position.x,h.position.z)){
+        h.position.x=ox;
+        h.position.z=oz;
+        h.userData.knockVX*=-.22;
+        h.userData.knockVZ*=-.22;
+      }
       h.userData.knockVX*=Math.pow(.06,dt);
       h.userData.knockVZ*=Math.pow(.06,dt);
       h.userData.hurtLean+=( -.24-h.userData.hurtLean )*Math.min(1,10*dt);
@@ -1266,26 +1458,16 @@ try{
     }
 
     h.userData.hurtLean+=(0-h.userData.hurtLean)*Math.min(1,8*dt);
-    h.rotation.z=h.userData.hurtLean;
+    if(!h.userData.lifeTask||h.userData.lifeTask.type!=='sleep')h.rotation.z=h.userData.hurtLean;
 
+    // Essential household chores take priority over leisure routines.
     if(h.userData.task){
       const task=h.userData.task;
       const point=task.phase==='fetch'?task.source:task.destination;
-      const dx=point.x-h.position.x,dz=point.z-h.position.z;
-      const dist=Math.hypot(dx,dz);
+      const dist=Math.hypot(point.x-h.position.x,point.z-h.position.z);
 
       if(dist>.42){
-        const dirX=dx/(dist||1),dirZ=dz/(dist||1);
-        h.position.x+=dirX*.66*dt;
-        h.position.z+=dirZ*.66*dt;
-        const desired=Math.atan2(dirX,dirZ);
-        h.rotation.y+=Math.atan2(Math.sin(desired-h.rotation.y),Math.cos(desired-h.rotation.y))*Math.min(1,6*dt);
-        h.userData.walkPhase+=dt*6.2;
-        const swing=Math.sin(h.userData.walkPhase)*.48;
-        h.userData.legs[0].rotation.x=swing;
-        h.userData.legs[1].rotation.x=-swing;
-        h.userData.arms[0].rotation.x=-swing*.5;
-        h.userData.arms[1].rotation.x=swing*.35;
+        moveHumanToward(h,point,.66,dt);
       }else{
         h.userData.taskTimer+=dt;
         const work=Math.sin(h.userData.taskTimer*6)*.22;
@@ -1315,7 +1497,6 @@ try{
           }else if(task.type==='cleanLitter'){
             clearLitterWaste();
           }
-
           clearHumanCarry(h);
           faucetFlow.visible=false;
           h.userData.task=null;
@@ -1325,26 +1506,22 @@ try{
       return;
     }
 
+    if(h.userData.lifeTask){
+      if(updateHumanLifeTask(h,dt))return;
+    }else if(now>=h.userData.nextLifeTask){
+      startHumanLifeTask(h);
+      if(updateHumanLifeTask(h,dt))return;
+    }
+
+    // Between activities, wander along the existing household route.
     const route=h.userData.route;
     const target=route[h.userData.routeIndex];
-    const dx=target.x-h.position.x,dz=target.z-h.position.z;
-    const dist=Math.hypot(dx,dz);
+    const dist=Math.hypot(target.x-h.position.x,target.z-h.position.z);
     if(dist<.18){
       h.userData.routeIndex=(h.userData.routeIndex+1)%route.length;
       return;
     }
-    const speed=.58;
-    const dirX=dx/dist,dirZ=dz/dist;
-    h.position.x+=dirX*speed*dt;
-    h.position.z+=dirZ*speed*dt;
-    const desired=Math.atan2(dirX,dirZ);
-    h.rotation.y+=Math.atan2(Math.sin(desired-h.rotation.y),Math.cos(desired-h.rotation.y))*Math.min(1,5*dt);
-    h.userData.walkPhase+=dt*5.8;
-    const swing=Math.sin(h.userData.walkPhase)*.46;
-    h.userData.legs[0].rotation.x=swing;
-    h.userData.legs[1].rotation.x=-swing;
-    h.userData.arms[0].rotation.x=-swing*.55;
-    h.userData.arms[1].rotation.x=swing*.55;
+    moveHumanToward(h,target,.58,dt);
   }
 
   // --- Cat model / life-stage rig ---
@@ -2380,6 +2557,15 @@ try{
       h.userData.knockVX=hitX*(.95*power)+p.sx*.25;
       h.userData.knockVZ=hitZ*(.95*power)+p.sz*.25;
       h.userData.hurtLean=-swipePaw*.18;
+
+      const now=performance.now();
+      if(now-h.userData.lastSwipeAt<2200)h.userData.swipeStreak++;
+      else h.userData.swipeStreak=1;
+      h.userData.lastSwipeAt=now;
+
+      if(h.userData.swipeStreak>=4&&now>=h.userData.retaliationCooldown&&!h.userData.retaliation){
+        h.userData.retaliation={phase:'approach',timer:0,hitDone:false};
+      }
     }
   }
 
